@@ -283,10 +283,11 @@ credentials/signing, a device/emulator pass, or scope beyond v1).
   gen-l10n` → `dart run build_runner build` → the Isar native-library
   test-setup step → `dart format --set-exit-if-changed` → `flutter
   analyze --fatal-infos --fatal-warnings` → `flutter test`, on push/PR to
-  `main`. The generation steps are necessary because `.g.dart` files and
-  `lib/core/l10n_gen/` are gitignored (see `.gitignore`'s "Generated
-  code" section) — CI has nothing to analyze or test without producing
-  them itself first.
+  `master` (see "real bugs" below — the workflow originally said `main`
+  and silently never ran). The generation steps are necessary because
+  `.g.dart` files and `lib/core/l10n_gen/` are gitignored (see
+  `.gitignore`'s "Generated code" section) — CI has nothing to analyze or
+  test without producing them itself first.
 
 ### Phase 5 deviations / additions
 
@@ -327,6 +328,19 @@ credentials/signing, a device/emulator pass, or scope beyond v1).
   end to end (see below) — this machine has a working Android SDK, unlike
   the "no device/emulator" gap noted in every earlier phase, so this was
   possible to check for real rather than just asserted.
+- **A third real bug, caught only after the first push**: `ci.yml`
+  originally triggered on `branches: [main]`, but `git init`'s default
+  branch on this machine is `master` (and that's what the GitHub repo
+  actually uses) — so the very first push produced zero workflow runs,
+  silently. Caught by checking `GET
+  /repos/sogragli4/Numagram/actions/runs` after the push and finding
+  `total_count: 0` against a confirmed-public repo, rather than trusting
+  that "the workflow file exists" meant "the workflow runs." Fixed by
+  changing both triggers to `branches: [master]`. Lesson: always verify a
+  new CI workflow actually fires on the branch it's really pushed to,
+  not just the conventional `main` — `git init`'s default and a
+  repo's actual default branch aren't guaranteed to match the workflow's
+  assumption.
 - **`flutter build apk --release --analyze-size` errors out on a
   multi-ABI APK** ("Cannot perform code size analysis when building for
   multiple ABIs") — fixed by pinning `--target-platform android-arm64` in
