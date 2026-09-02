@@ -42,3 +42,23 @@ abstract final class ThemeUnlocks {
 abstract final class FreePlaySizeUnlocks {
   static const int extraLargeStreakDays = 14;
 }
+
+/// Thresholds for the collectible achievement badges (see
+/// `domain/entities/achievement.dart`). Purely cosmetic recognition,
+/// derived entirely from already-persisted stats/streak data — nothing
+/// new to track, and (same rule as every other unlock in this app) never
+/// gated behind an ad.
+abstract final class AchievementThresholds {
+  static const int tenPuzzles = 10;
+  static const int fiftyPuzzles = 50;
+  static const int hundredPuzzles = 100;
+  static const int tenPerfect = 10;
+
+  /// A near-term streak milestone, deliberately short of
+  /// [ThemeUnlocks.sunsetStreakDays] — an early "you're building a habit"
+  /// nudge before the first cosmetic unlock lands.
+  static const int earlyStreakDays = 3;
+
+  /// Minimum side length for the "solved a big puzzle" badge.
+  static const int bigPuzzleMinSide = 15;
+}

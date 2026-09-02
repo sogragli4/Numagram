@@ -325,5 +325,97 @@
   "settingsHowToPlayLabel": "How to Play",
   "@settingsHowToPlayLabel": {
     "description": "Settings entry that replays the tutorial."
+  },
+  "achievementsSectionTitle": "Achievements",
+  "@achievementsSectionTitle": {
+    "description": "Section title on the statistics screen for the collectible achievement badges."
+  },
+  "achievementFirstPuzzleTitle": "First Steps",
+  "@achievementFirstPuzzleTitle": {
+    "description": "Title of the achievement for solving the first puzzle ever."
+  },
+  "achievementFirstPuzzleDescription": "Solve your first puzzle",
+  "@achievementFirstPuzzleDescription": {
+    "description": "Description of the first-puzzle achievement."
+  },
+  "achievementTenPuzzlesTitle": "Getting the Hang of It",
+  "@achievementTenPuzzlesTitle": {
+    "description": "Title of the achievement for solving 10 puzzles."
+  },
+  "achievementTenPuzzlesDescription": "Solve 10 puzzles",
+  "@achievementTenPuzzlesDescription": {
+    "description": "Description of the 10-puzzles achievement."
+  },
+  "achievementFiftyPuzzlesTitle": "Puzzle Enthusiast",
+  "@achievementFiftyPuzzlesTitle": {
+    "description": "Title of the achievement for solving 50 puzzles."
+  },
+  "achievementFiftyPuzzlesDescription": "Solve 50 puzzles",
+  "@achievementFiftyPuzzlesDescription": {
+    "description": "Description of the 50-puzzles achievement."
+  },
+  "achievementHundredPuzzlesTitle": "Puzzle Master",
+  "@achievementHundredPuzzlesTitle": {
+    "description": "Title of the achievement for solving 100 puzzles."
+  },
+  "achievementHundredPuzzlesDescription": "Solve 100 puzzles",
+  "@achievementHundredPuzzlesDescription": {
+    "description": "Description of the 100-puzzles achievement."
+  },
+  "achievementFirstPerfectTitle": "Flawless",
+  "@achievementFirstPerfectTitle": {
+    "description": "Title of the achievement for the first no-mistake solve."
+  },
+  "achievementFirstPerfectDescription": "Solve a puzzle with no mistakes",
+  "@achievementFirstPerfectDescription": {
+    "description": "Description of the first-perfect achievement."
+  },
+  "achievementTenPerfectTitle": "Perfectionist",
+  "@achievementTenPerfectTitle": {
+    "description": "Title of the achievement for 10 no-mistake solves."
+  },
+  "achievementTenPerfectDescription": "Solve 10 puzzles with no mistakes",
+  "@achievementTenPerfectDescription": {
+    "description": "Description of the 10-perfect achievement."
+  },
+  "achievementThreeDayStreakTitle": "Building a Habit",
+  "@achievementThreeDayStreakTitle": {
+    "description": "Title of the achievement for a 3-day streak."
+  },
+  "achievementThreeDayStreakDescription": "Reach a 3-day streak",
+  "@achievementThreeDayStreakDescription": {
+    "description": "Description of the 3-day-streak achievement."
+  },
+  "achievementSevenDayStreakTitle": "Week Warrior",
+  "@achievementSevenDayStreakTitle": {
+    "description": "Title of the achievement for a 7-day streak."
+  },
+  "achievementSevenDayStreakDescription": "Reach a 7-day streak",
+  "@achievementSevenDayStreakDescription": {
+    "description": "Description of the 7-day-streak achievement."
+  },
+  "achievementThirtyDayStreakTitle": "Monthly Devotion",
+  "@achievementThirtyDayStreakTitle": {
+    "description": "Title of the achievement for a 30-day streak."
+  },
+  "achievementThirtyDayStreakDescription": "Reach a 30-day streak",
+  "@achievementThirtyDayStreakDescription": {
+    "description": "Description of the 30-day-streak achievement."
+  },
+  "achievementBigThinkerTitle": "Big Thinker",
+  "@achievementBigThinkerTitle": {
+    "description": "Title of the achievement for solving a 15x15-or-larger puzzle."
+  },
+  "achievementBigThinkerDescription": "Solve a 15×15 puzzle or larger",
+  "@achievementBigThinkerDescription": {
+    "description": "Description of the big-thinker achievement."
+  },
+  "achievementGoBigTitle": "Go Big",
+  "@achievementGoBigTitle": {
+    "description": "Title of the achievement for solving a 20x20 puzzle."
+  },
+  "achievementGoBigDescription": "Solve a 20×20 puzzle",
+  "@achievementGoBigDescription": {
+    "description": "Description of the go-big achievement."
   }
 }

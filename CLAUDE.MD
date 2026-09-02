@@ -223,10 +223,54 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete, plus three post-v1 features
-(interactive tutorial, progressive difficulty, and sound effects, below).
-Awaiting founder direction on what's next (real store credentials/signing,
-a device/emulator pass, or further scope beyond v1).
+### Current phase: Phase 5 complete, plus four post-v1 features
+(interactive tutorial, progressive difficulty, sound effects, and
+achievement badges, below). Awaiting founder direction on what's next
+(real store credentials/signing, a device/emulator pass, or further scope
+beyond v1).
+
+### Post-v1: Achievement badges (added 2026-09-02)
+
+Eleven collectible badges on the statistics screen, cosmetic recognition
+for progress the app already tracks — not a new system to maintain in
+parallel with the real stats/streak data.
+
+- **`domain/entities/achievement.dart`** (`AchievementId` enum,
+  `Achievement`) + **`domain/usecases/evaluate_achievements.dart`**
+  (`evaluateAchievements`) — pure Dart, no Flutter import, same layering
+  as every other `domain/` file. Deliberately **not persisted**:
+  unlock state is derived fresh each time from `Statistics` (already
+  computed by `StreakRepository.getStatistics`) and `longestStreak`
+  (already computed by `StreakRecord.compute`) — same "one source of
+  truth, nothing to desync" reasoning `StreakRecord` itself already
+  uses, extended to this feature rather than introducing a second,
+  separately-persisted "unlocked" flag that could drift out of sync
+  with the stats it's supposed to reflect.
+- **Badge set** (thresholds in new `AchievementThresholds` in
+  `core/constants.dart`, reusing `ThemeUnlocks.sunsetStreakDays`/
+  `forestStreakDays` for the 7/30-day streak badges rather than
+  duplicating those numbers): solved-count (1/10/50/100), perfect-count
+  (1/10), streak (3/7/30 days — the 3-day one is new, a near-term nudge
+  before the first cosmetic theme unlock at 7), and size (any
+  15×15-or-larger solve; the exact 20×20 Free Play "Extra Large" size).
+  Every threshold: unlocked by progress, never by ad — the same rule
+  every other unlock in this app already follows.
+- **`presentation/statistics/statistics_screen.dart`**: a new badge grid
+  (locked = grey circle + lock icon + dimmed text, unlocked = tinted
+  circle + the badge's own icon) sits above the existing total/perfect/
+  average-time stats, in the same `ListView`. Restructured so the badge
+  grid always renders — including every-badge-locked at zero
+  completions, "here's what you can earn" rather than an empty screen —
+  while the numeric stats section keeps its original empty-state message
+  until there's at least one completion to show.
+- **Tests**: 117/117 passing — 6 new pure-function tests
+  (`evaluate_achievements_test.dart`) covering every threshold boundary
+  (locked exactly below, unlocked exactly at) and the two solved-size
+  conditions. No widget-level test: the grid is presentation-only mapping
+  of already-tested domain data, verified instead by a golden-screenshot
+  check (all-locked at zero completions, and a mixed locked/unlocked
+  state from real seeded completions) during development, same as every
+  other UI change in this project — not kept as a permanent test file.
 
 ### Post-v1: Sound effects (added 2026-09-02)
 
@@ -1032,7 +1076,7 @@ not a runtime fallback.
 ### Toolchain on the primary dev machine
 - Flutter 3.35.5 (stable), Dart 3.9.2, Windows 10, no `make` installed.
 - `flutter analyze --fatal-infos --fatal-warnings`: clean.
-- `flutter test`: 111/111 passing (as of the post-v1 progressive-difficulty
+- `flutter test`: 117/117 passing (as of the post-v1 achievement-badges
   feature). Requires `make test-setup` / `./make.ps1 test-setup` once
   first (copies Isar's native library into the project root — see
   Phase 3 deviations).
