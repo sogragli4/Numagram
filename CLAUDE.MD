@@ -234,81 +234,140 @@ verified on a real device. Awaiting founder go-ahead to start Faz 3 of
 the word game (persistence + real content), per the same "stop after
 each phase, wait" rule the original project brief itself set.
 
-### Kelime Bulmacası home screen (added 2026-09-02)
+### Kelime Bulmacası home screen (added 2026-09-02, revised same day)
 
 The founder's second reference mockup ("ana menü") asked for a branded
 home screen for the word game — the piece that was missing between
 `GamePickerScreen` (picks a game) and `WordBoardScreen` (plays one),
-mirroring the role `DailyScreen` already plays for Nonogram.
-`lib/presentation/word/home/word_home_screen.dart` (`WordHomeScreen`):
-a masthead title + tagline, a calendar icon (archive) and settings icon
-(opens the existing shared `SettingsScreen` — reused as-is, not
-duplicated, since theme/sound/notification settings are app-wide, not
-per-game) in the top corner, and four stacked `AppButton`s. Background
-is `WordMastheadPainter`, a `CustomPainter` gradient + faint
-crossword-grid texture built from the brand palette itself — no
-photographic asset exists in this environment (same gap as the app
-icon/splash/sound placeholders), and a palette-derived texture will
-never look out of place once real photography replaces it, unlike an
-unrelated stock image would.
+mirroring the role `DailyScreen` already plays for Nonogram. This
+screen went through three real rounds this session — an initial build,
+then a full pixel-parity pass once the founder pointed at the mockup
+image directly, then a founder-supplied real photo replacing the drawn
+approximation, then a founder polish pass fixing three more real bugs —
+each documented below in order, since the reasoning from earlier rounds
+still explains why the code looks the way it does.
 
-**Two mockup elements were deliberately changed, not carried over
-as-is** — both flagged to the founder and resolved via explicit
-decisions before building, not assumed:
+**Round 1 — first pass, simplified (4 buttons, drawn background).**
+`lib/presentation/word/home/word_home_screen.dart` (`WordHomeScreen`)
+originally shipped with a masthead title + tagline drawn in Flutter, a
+`CustomPainter` gradient + faint grid texture standing in for a
+photograph (no photographic asset existed in this environment, same
+gap as the app icon/splash/sound placeholders), and four stacked
+`AppButton`s — "Liderlik Tablosu" was folded into "Başarılarım" and
+"Mağaza" was dropped outright, both per explicit founder decisions,
+reasoned through in detail the first time this section was written.
 
-- **"Liderlik Tablosu" (leaderboard) → dropped, per the founder's own
-  choice.** A real leaderboard needs a backend to compare players
-  against each other, which conflicts directly with the locked "no
-  backend, no server, no login" architecture decision. The founder
-  chose to fold its intent into "Başarılarım" (personal stats/
-  achievements) instead — since the mockup already had a separate
-  achievements button, keeping both would have meant two buttons
-  pointing at the same eventual screen, so the menu now has four
-  buttons, not five.
-- **"Mağaza" (store) bottom-nav tab → dropped outright, per the
-  founder's own choice.** No in-app purchases exist anywhere in this
-  project; monetization is locked as ad-only (rewarded + interstitial).
-  A store tab with nothing to sell would either sit empty or invite
-  scope creep toward IAP that was never asked for.
+**Round 2 — founder asked for full pixel parity with the mockup,
+including the two dropped elements.** The founder's next message
+pointed at the mockup screenshot directly and asked for the *exact*
+same interface: five buttons (not four — "Liderlik Tablosu" back as
+its own row) and a five-item bottom navigation bar (including
+"Mağaza"). Rather than silently reopen the earlier decision, both were
+brought back **as visible, non-functional "coming soon" placeholders**
+— the underlying architecture conflict (leaderboard needs a backend;
+store has nothing to sell under ad-only monetization) hadn't changed,
+so neither became real, they just became visible again, exactly like
+"Bulmacalar"/"Başarılarım" already were. `_ActionCard` (icon badge +
+title + subtitle row) and `_WordHomeBottomNav`/`_NavItem` were added
+for this. New ARB keys across all six locales:
+`wordHomeMastheadEyebrow`, `wordHomeMastheadTitle` (the split
+"GÜNLÜK"/"BULMACA" masthead lines), `wordHomeNewPuzzleSubtitle`,
+`wordHomeArchiveSubtitle`, `wordHomeAchievementsSubtitle`,
+`wordHomeLeaderboardButtonLabel`, `wordHomeLeaderboardSubtitle`,
+`wordHomeHowToPlaySubtitle`, `wordHomeBottomNavHomeLabel`,
+`wordHomeStoreLabel` (plus `wordHomeTagline`'s text updated to match
+the mockup's actual copy). "Nasıl Oynanır" still opens a simple
+`AlertDialog` with written instructions rather than a full interactive
+tutorial — a second guided, scripted tutorial for a demo puzzle Faz 3
+will replace anyway isn't a good use of effort yet.
 
-**"Bulmacalar" (archive) and "Başarılarım" (achievements) are visible
-and tappable but not real features yet** — both need persisted
-word-game completion history, and that's Faz 3, not started (see
-below). Rather than hide them or fake data, tapping either shows a
-clear "Yakında geliyor" snackbar (`wordHomeComingSoonMessage`) —
-consistent with this project's standing rule of flagging an unfinished
-gap rather than papering over it. "Nasıl Oynanır" opens a simple
-`AlertDialog` with brief written instructions, not a full interactive
-tutorial like Nonogram's `TutorialScreen` — building a second guided,
-scripted tutorial experience for a demo puzzle that Faz 3 will replace
-anyway isn't a good use of build effort yet; revisit once real content
-exists.
+**Round 3 — the founder supplied a real photo
+(`assets/images/word_home_background.jfif`) to replace the drawn
+approximation**, and asked the DİKEY/YATAY decorative clue-strip text
+be layered on top of it. Registered under a new `assets/images/` entry
+in `pubspec.yaml`. Since the photo already bakes in the masthead text
+("GÜNLÜK BULMACA" + tagline) and calendar/settings icon artwork,
+`WordHomeScreen` stopped drawing its own copies of the masthead text
+(would visibly double it) — `WordHomeBackgroundPainter` was deleted
+outright and replaced by the much smaller `WordHomeClueStripPainter`,
+which paints *only* the DİKEY/YATAY overlay (still canvas-painted, not
+widget-tree `Text`, and still `ExcludeSemantics`-wrapped, for the same
+"this is decorative flavor, not information" reasoning as before).
 
-New ARB keys, all six locales: `wordHomeTagline`,
-`wordHomeNewPuzzleButtonLabel`, `wordHomeComingSoonMessage`,
-`wordHomeHowToPlayBody`. Everything else on the screen reuses existing
-keys (`archiveTitle`, `achievementsSectionTitle`, `settingsTitle`,
-`settingsHowToPlayLabel`, `tutorialTitle`, `continueButtonLabel`) —
-each was already generic enough for this new context, so no near-duplicate
-key was added.
+**A real bug found on-device in round 3**: the photo's own baked-in
+settings-icon artwork disappeared entirely on the test device.
+`BoxFit.cover` crops a different slice of the photo depending on each
+device's aspect ratio, and on this phone the crop cut off the photo's
+right edge — exactly where the settings icon was drawn — leaving an
+*invisible, undiscoverable* tap target (the calendar icon, drawn
+further left, survived the crop and still looked functional, making
+this easy to miss without checking the actual corner on a real
+screen). Fixed by no longer relying on the photo's own icon artwork
+for interactivity at all: `_SquareIconButton` — real, visible Flutter
+buttons styled to match the photo's icon look — replaced the
+photo-reliant approach, guaranteeing both stay visible and tappable
+regardless of how any given device crops the background.
 
-**Tests**: no new dedicated test file — the screen is a straightforward
-composition of already-tested components (`AppButton`, `AppCard`-free
-here since none of its content needed a card surface, `SettingsScreen`,
-`WordBoardScreen`) with no new domain logic of its own to unit-test;
-verified instead by driving every button on the real device (see
-below), matching how `GamePickerScreen` itself was verified. Full suite
-still 179/179 passing, `flutter analyze --fatal-infos --fatal-warnings`
-clean.
+**Round 4 — founder polish feedback, three more real, confirmed
+issues, all fixed**:
 
-**Visual verification**: real device, full clean-rebuild cycle. Every
-interactive element was actually tapped and screenshotted: the masthead
-and background texture render correctly; "Yeni Bulmaca" opens the real
-crossword board (confirming the keyboard-overflow fix from the pivot
-still holds, unaffected by this change); "Arşiv"/"Başarılarım" show the
-coming-soon snackbar; "Nasıl Oynanır" opens its dialog with the correct
-Turkish instructions text; the settings icon opens the real, shared
-`SettingsScreen`. No overflow or layout issues found this time.
+1. **"Menü altta kalıyor... tam sayfada hizalamamız gerekiyor."** The
+   fixed 300px masthead-clearing spacer, plus five full-size cards,
+   didn't fit inside the real device's available height above the
+   bottom nav — the last one or two cards required a scroll the
+   founder's mockup never intended, and the nav bar read as "stuck"
+   rather than sitting flush under a fully-visible menu. Fixed with a
+   `LayoutBuilder` that computes the masthead-clearing gap from the
+   real available height (`constraints.maxHeight` minus the icon row
+   and the five cards' actual height), clamped to a sane range — the
+   same "compute from real available space" approach `BoardScreen`'s
+   `_fitBoardLayout` and the crossword keyboard already established
+   for exactly this class of bug. `SingleChildScrollView` stays in
+   place as a safety net for a shorter device than the one tested, but
+   no longer needs to actually scroll on this one.
+2. **Calendar icon removed outright, per direct founder feedback** —
+   it only ever duplicated what "Bulmacalar" (the card, and the
+   bottom-nav tab) already does; the settings button now sits alone,
+   right-aligned.
+3. **Card background changed from flat white to cream/ivory with a
+   gold border, and the icon badges gained a matching gold/navy ring**
+   — the founder pointed at the mockup again and asked for card
+   styling to match: `_ActionCard`'s `surfaceColor` now uses
+   `appColors.background` (the same warm parchment tone as the page,
+   not `appColors.surface`'s flat white) for outlined cards, both
+   variants gained a `Border.all` in `appColors.orange` at partial
+   alpha, and the icon badge `Container` gained a `Border.all` ring in
+   a contrasting tone — together matching the mockup's "premium
+   newspaper" card look instead of looking like a plain Material
+   default card dropped onto a photo.
+
+**Also carried over from round 1, still true**: settings still opens
+the real, shared `SettingsScreen` (not a per-game duplicate — theme/
+sound/notification settings are app-wide); no dedicated test file for
+this screen (a straightforward composition of already-tested pieces
+with no new domain logic, verified by driving every button on the real
+device instead, matching how `GamePickerScreen` itself was verified).
+
+**Known trade-off, flagged rather than silently accepted**: the photo
+is one static asset with Turkish masthead text baked in, so non-Turkish
+locales (en/de/es/fr) will still show a Turkish masthead until/unless a
+per-locale image is supplied — this screen has no way to swap in
+translated text over a flattened photo. The now-unreferenced
+`wordHomeMastheadEyebrow`/`wordHomeMastheadTitle`/`wordHomeTagline` ARB
+keys were deliberately left in place rather than deleted, in case a
+per-locale image (or a return to the drawn masthead) revives them.
+
+**Tests**: still 179/179 passing, `flutter analyze --fatal-infos
+--fatal-warnings` clean, after every round above. **Visual
+verification**: real device, full clean-rebuild cycle, every round —
+every interactive element actually tapped and screenshotted each time
+(masthead/background render correctly; "Yeni Bulmaca" opens the real
+crossword board, confirming the keyboard-overflow fix from the pivot
+still holds; "Arşiv"/"Başarılarım"/"Liderlik Tablosu"/"Mağaza" show the
+coming-soon snackbar; "Nasıl Oynanır" opens its dialog; settings opens
+the real `SettingsScreen`); this is what caught all three real bugs
+documented above — none of them were visible in `flutter test`'s
+default-width surface.
 
 ### Kelime Bulmacası pivot: real crossword grid, not a clue list (added 2026-09-02)
 

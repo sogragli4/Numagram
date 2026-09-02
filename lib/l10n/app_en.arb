@@ -41,17 +41,57 @@
   "@wordClearEntryLabel": {
     "description": "Button that clears the currently active crossword entry's typed letters."
   },
-  "wordHomeTagline": "A new crossword every day",
+  "wordHomeMastheadEyebrow": "DAILY",
+  "@wordHomeMastheadEyebrow": {
+    "description": "Small-caps eyebrow line above the word game home screen's masthead title."
+  },
+  "wordHomeMastheadTitle": "PUZZLE",
+  "@wordHomeMastheadTitle": {
+    "description": "Large masthead title on the word game home screen, styled like a newspaper heading."
+  },
+  "wordHomeTagline": "Discover words, sharpen your mind!",
   "@wordHomeTagline": {
-    "description": "Tagline shown under the word game's title on its home screen."
+    "description": "Tagline shown under the word game's masthead title on its home screen."
   },
   "wordHomeNewPuzzleButtonLabel": "New Puzzle",
   "@wordHomeNewPuzzleButtonLabel": {
     "description": "Button label on the word game home screen to start today's crossword."
   },
+  "wordHomeNewPuzzleSubtitle": "Solve today's puzzle",
+  "@wordHomeNewPuzzleSubtitle": {
+    "description": "Subtitle under the New Puzzle button on the word game home screen."
+  },
+  "wordHomeArchiveSubtitle": "Browse every puzzle",
+  "@wordHomeArchiveSubtitle": {
+    "description": "Subtitle under the Archive button on the word game home screen."
+  },
+  "wordHomeAchievementsSubtitle": "See your badges and stats",
+  "@wordHomeAchievementsSubtitle": {
+    "description": "Subtitle under the Achievements button on the word game home screen."
+  },
+  "wordHomeLeaderboardButtonLabel": "Leaderboard",
+  "@wordHomeLeaderboardButtonLabel": {
+    "description": "Button label on the word game home screen for the leaderboard — a visible, not-yet-built placeholder (no backend exists in this app's locked architecture)."
+  },
+  "wordHomeLeaderboardSubtitle": "See the top players",
+  "@wordHomeLeaderboardSubtitle": {
+    "description": "Subtitle under the Leaderboard button on the word game home screen."
+  },
+  "wordHomeHowToPlaySubtitle": "Learn the rules",
+  "@wordHomeHowToPlaySubtitle": {
+    "description": "Subtitle under the How to Play button on the word game home screen."
+  },
+  "wordHomeBottomNavHomeLabel": "Home",
+  "@wordHomeBottomNavHomeLabel": {
+    "description": "Label for the Home item on the word game home screen's bottom navigation bar."
+  },
+  "wordHomeStoreLabel": "Store",
+  "@wordHomeStoreLabel": {
+    "description": "Label for the Store item on the word game home screen's bottom navigation bar — a visible, not-yet-built placeholder (no in-app purchases exist under the locked ad-only monetization model)."
+  },
   "wordHomeComingSoonMessage": "Coming soon",
   "@wordHomeComingSoonMessage": {
-    "description": "Snackbar shown when tapping a word game home screen button for a feature not built yet (archive, achievements)."
+    "description": "Snackbar shown when tapping a word game home screen button for a feature not built yet (archive, achievements, leaderboard, store)."
   },
   "wordHomeHowToPlayBody": "Tap a clue, or a cell in the grid, to select an entry, then type letters on the keyboard to fill it in. Crossing entries share letters, so a correct guess in one can help you with another.",
   "@wordHomeHowToPlayBody": {
