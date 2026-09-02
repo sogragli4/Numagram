@@ -5,7 +5,7 @@ import 'package:nonogram_daily/core/design_system/app_typography.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/presentation/daily/daily_screen.dart';
 import 'package:nonogram_daily/presentation/shared/app_card.dart';
-import 'package:nonogram_daily/presentation/word/home/word_home_screen.dart';
+import 'package:nonogram_daily/presentation/word/word_entry_router.dart';
 
 /// The app's entry point once both game modes exist — two cards, each
 /// opening that game's own flow. Replaces the direct-to-`DailyScreen`
@@ -41,7 +41,7 @@ class GamePickerScreen extends StatelessWidget {
                 label: l10n.wordGameTitle,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => const WordHomeScreen(),
+                    builder: (_) => const WordEntryRouter(),
                   ),
                 ),
               ),

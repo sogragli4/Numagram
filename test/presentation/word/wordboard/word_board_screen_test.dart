@@ -1,17 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nonogram_daily/core/injection.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/core/theme.dart';
+import 'package:nonogram_daily/domain/entities/word/word_progress.dart';
+import 'package:nonogram_daily/domain/repositories/word_progress_repository.dart';
+import 'package:nonogram_daily/presentation/word/word_progress_controller.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/word_board_controller.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/word_board_screen.dart';
+
+/// No real Isar instance is wired into this narrow widget test's
+/// container (unlike `main()`, which always provides one) — this stands
+/// in so winning the demo crossword can record completion without
+/// needing real persistence, the same "fake the plugin/service this test
+/// doesn't care about" pattern `widget_test.dart`'s
+/// `_FakeConsentService`/`_FakeAdService` already use.
+class _FakeWordProgressRepository implements WordProgressRepository {
+  @override
+  Future<WordProgress> getProgress() async => WordProgress.defaults;
+
+  @override
+  Future<void> updateProgress(WordProgress progress) async {}
+}
 
 void main() {
   testWidgets('typing every entry through the on-screen keyboard, including a '
       'wrong letter that must not stick, solves the demo crossword', (
     WidgetTester tester,
   ) async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        // Winning the demo crossword now also records completion via
+        // `WordProgressController` — this test drives a real win, so it
+        // needs the same override `main()` provides in the real app.
+        initialWordProgressProvider.overrideWithValue(WordProgress.defaults),
+        wordProgressRepositoryProvider.overrideWithValue(
+          _FakeWordProgressRepository(),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
     // `WordBoardController` is `@riverpod` (autoDispose) — keep it
     // alive across the test the same way `tutorial_screen_test.dart`

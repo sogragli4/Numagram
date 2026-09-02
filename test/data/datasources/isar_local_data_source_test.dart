@@ -5,10 +5,12 @@ import 'package:isar_community/isar.dart';
 import 'package:nonogram_daily/data/datasources/isar_local_data_source.dart';
 import 'package:nonogram_daily/data/models/app_settings_model.dart';
 import 'package:nonogram_daily/data/models/puzzle_completion_model.dart';
+import 'package:nonogram_daily/data/models/word_progress_model.dart';
 import 'package:nonogram_daily/domain/entities/app_settings.dart';
 import 'package:nonogram_daily/domain/entities/difficulty.dart';
 import 'package:nonogram_daily/domain/entities/grid_size.dart';
 import 'package:nonogram_daily/domain/entities/puzzle_completion.dart';
+import 'package:nonogram_daily/domain/entities/word/word_progress.dart';
 
 void main() {
   late Directory tempDir;
@@ -20,6 +22,7 @@ void main() {
     isar = await Isar.open([
       PuzzleCompletionModelSchema,
       AppSettingsModelSchema,
+      WordProgressModelSchema,
     ], directory: tempDir.path);
     dataSource = IsarLocalDataSource(isar);
   });
@@ -126,6 +129,51 @@ void main() {
       expect(settings.streakFreezesAvailable, 2);
       expect(settings.frozenDateKeys, ['2026-09-09', '2026-08-15']);
       expect(settings.freezeGrantMonthKey, '2026-09');
+    });
+  });
+
+  group('IsarLocalDataSource word progress', () {
+    test('returns defaults when nothing has been saved yet', () async {
+      final progress = await dataSource.getWordProgress();
+      expect(progress.toEntity().completedSectionKeys, isEmpty);
+      expect(progress.toEntity().hasSeenInterestSurvey, isFalse);
+    });
+
+    test('saves and reads back updated progress', () async {
+      final updated = WordProgress.defaults.copyWith(
+        completedSectionKeys: {'demo#1', 'tarih#1'},
+        interestTagIds: {'tarih', 'hukuk'},
+        hasSeenInterestSurvey: true,
+        categoryChangeDateKey: () => '2026-09-01',
+        categoryChangeCount: 1,
+      );
+      await dataSource.saveWordProgress(WordProgressModel.fromEntity(updated));
+
+      final progress = (await dataSource.getWordProgress()).toEntity();
+      expect(progress.completedSectionKeys, {'demo#1', 'tarih#1'});
+      expect(progress.interestTagIds, {'tarih', 'hukuk'});
+      expect(progress.hasSeenInterestSurvey, isTrue);
+      expect(progress.categoryChangeDateKey, '2026-09-01');
+      expect(progress.categoryChangeCount, 1);
+    });
+
+    test('overwrites rather than duplicates the single row', () async {
+      await dataSource.saveWordProgress(
+        WordProgressModel.fromEntity(
+          WordProgress.defaults.copyWith(hasSeenInterestSurvey: true),
+        ),
+      );
+      await dataSource.saveWordProgress(
+        WordProgressModel.fromEntity(
+          WordProgress.defaults.copyWith(
+            hasSeenInterestSurvey: true,
+            interestTagIds: {'gundem'},
+          ),
+        ),
+      );
+
+      final progress = (await dataSource.getWordProgress()).toEntity();
+      expect(progress.interestTagIds, {'gundem'});
     });
   });
 }

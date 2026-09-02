@@ -7,6 +7,7 @@ import 'package:nonogram_daily/core/design_system/app_typography.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/domain/entities/word/crossword_entry.dart';
 import 'package:nonogram_daily/presentation/shared/app_button.dart';
+import 'package:nonogram_daily/presentation/word/word_progress_controller.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/crossword_layout.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/crossword_painter.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/word_board_controller.dart';
@@ -124,6 +125,13 @@ class _WordBoardScreenState extends ConsumerState<WordBoardScreen>
           ..animateTo(0, curve: Curves.easeOut);
       }
       if ((previous == null || !previous.session.won) && next.session.won) {
+        final puzzle = next.session.puzzle;
+        ref
+            .read(wordProgressControllerProvider.notifier)
+            .unlockNextSection(
+              trackId: puzzle.trackId,
+              sectionIndex: puzzle.sectionIndex,
+            );
         Future.microtask(() {
           if (!mounted) return;
           // ignore: use_build_context_synchronously, reason: guarded by mounted above

@@ -226,13 +226,18 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 ### Current phase: Phase 5 complete, plus five post-v1 features, a
 code-review pass, three more locales beyond the locked en/tr, the first
 real-device verification pass, a real board-responsiveness bug fix
-found by it, and Faz 0 + Faz 1 + Faz 2 of a second game mode ("Kelime
+found by it, and Faz 0 through Faz 3 of a second game mode ("Kelime
 Bulmacası" — see directly below), now a real intersecting crossword
 (not the original clue-list mechanic — see the pivot note) with its own
-design system and its own branded home screen, playable end to end and
-verified on a real device. Awaiting founder go-ahead to start Faz 3 of
-the word game (persistence + real content), per the same "stop after
-each phase, wait" rule the original project brief itself set.
+design system, its own branded home screen (through several founder
+revision rounds — real photo background, pixel parity with the
+reference mockup, several real device-only bugs found and fixed), and
+now real persistence (interest survey, section-completion recording,
+category-change quota) — playable end to end and verified on a real
+device. Real multi-track/section content still doesn't exist (bölüm
+6's AI-draft + founder-review pipeline hasn't started) — only the one
+hand-authored demo crossword plays for now, with its completion
+genuinely recorded rather than ephemeral.
 
 ### Kelime Bulmacası home screen (added 2026-09-02, revised same day)
 
@@ -829,15 +834,108 @@ own Phase 2 → Phase 3 split).
 first test still counting as one). `flutter analyze --fatal-infos
 --fatal-warnings`: clean.
 
-**Faz 3 is the next stop — do not start it without an explicit founder
-go-ahead.** Likely scope: real repositories for the four remaining Faz 0
-usecases (`UnlockNextSection`, `ApplyInterestSelection`,
-`SpendCategoryChange`, plus wiring `ApplyInterestSelection`'s
-`InterestSurveyScreen`), an Isar-backed `data/` layer for this feature
-(new models, mirroring `PuzzleCompletionModel`/`AppSettingsModel`'s
-pattern), and replacing `buildDemoWordSection()` with real
-track/section content — once that content exists (bölüm 6's AI-draft +
-founder-review pipeline, still not started).
+### Faz 3: persistence + progression plumbing (added 2026-09-03)
+
+Scoped deliberately narrower than the founder's own original "likely
+scope" guess for this phase: real repositories for the three remaining
+Faz 0 usecases, an Isar-backed `data/` layer, and the interest survey
+UI — all built and wired for real. **Not** in scope: replacing
+`buildDemoCrossword()` with real track/section content, because that
+still needs bölüm 6's AI-draft + founder-review content pipeline, and
+that pipeline hasn't started. Building persistence/unlock plumbing
+ahead of real content (rather than waiting on it) matches this
+project's own precedent — Nonogram's Phase 4 wired real ad-service
+logic years before real ad unit IDs existed, same reasoning.
+
+- **`domain/entities/word/word_progress.dart`** — `WordProgress`, the
+  word game's `AppSettings` equivalent. **Only** `completedSectionKeys`
+  (a `Set<String>` of `"<trackId>#<sectionIndex>"` keys) is persisted
+  unlock state — how many sections of a track are unlocked is a
+  *derived* count, not separately stored, the same "computed, never
+  stored" reasoning `StreakRecord.compute` already established for
+  Nonogram's streaks. Also carries `interestTagIds`,
+  `hasSeenInterestSurvey`, and the `categoryChangeDateKey`/
+  `categoryChangeCount` date-keyed daily counter (new
+  `WordGameLimits.freeCategoryChangesPerDay = 2` in `core/constants.dart`),
+  mirroring `AppSettings.archiveUnlocksCountFor` exactly.
+- **`domain/entities/word/interest_profile.dart`** gained
+  `InterestProfile.allTagIds` — the canonical 10 survey tags: every flat
+  category except Karışık (an always-open mixed default isn't a personal
+  "interest" to opt into) plus all five Z Kuşağı sub-branches
+  individually, per bölüm 3's "tags span every track/sub-track."
+- **The three Faz 0 usecase placeholders became real, pure, tested
+  functions**: `UnlockNextSection` (idempotent — records a section
+  complete, matching `IsarLocalDataSource.saveCompletion`'s "first
+  completion counts" reasoning), `ApplyInterestSelection` (records
+  selections and marks the survey seen — an empty selection is a valid
+  skip, not a special case), `SpendCategoryChange` (records a spend
+  against the daily quota; the caller, not this usecase, is responsible
+  for checking the quota before calling it — there's no category-picker
+  UI yet to be that caller, so this one is real and tested but not yet
+  wired to any screen).
+- **`data/models/word_progress_model.dart`** + **`WordProgressRepository`**/
+  **`WordProgressRepositoryImpl`** + two new `IsarLocalDataSource` methods
+  — single-row table, mirroring `AppSettingsModel`/`SettingsRepository`
+  field-for-field. New `WordProgressModelSchema` registered in
+  `main()`'s `Isar.open([...])` alongside the other two.
+- **`presentation/word/word_progress_controller.dart`** —
+  `WordProgressController`, mirroring `AppSettingsController`: loaded
+  before `runApp` via a new `initialWordProgressProvider` override in
+  `main()`, exactly like `initialAppSettingsProvider`.
+- **`InterestSurveyScreen`** is now a real screen — a `Wrap` of
+  `FilterChip`s for all 10 tags, explanatory copy, and a "Devam Et"
+  button that calls `applyInterestSelection`. **`WordEntryRouter`**
+  (new) shows it reactively before `WordHomeScreen` on the player's
+  first-ever visit — same `_HomeRouter`/`TutorialScreen` reactive-swap
+  pattern, not a one-time `Navigator` push. `GamePickerScreen` now
+  pushes `WordEntryRouter` instead of `WordHomeScreen` directly.
+- **`WordBoardScreen`'s win listener** now also calls
+  `unlockNextSection(trackId: puzzle.trackId, sectionIndex: puzzle.sectionIndex)`
+  right alongside showing the completion dialog — the demo puzzle's
+  completion is genuinely recorded now, not just ephemeral session
+  state, even though there's only the one demo section to record yet.
+
+**New ARB keys, all six locales**: `wordSurveyTitle`, `wordSurveyBody`,
+and one `wordSurveyTag*` key per tag (10) — `continueButtonLabel` was
+reused for the button, already generic enough.
+
+**Tests**: 198/198 passing (179 + 19 new: 2 `InterestProfile.allTagIds`
+cases, 5 `WordProgress` cases, 3 each for the three usecases, 3 new
+`IsarLocalDataSource` word-progress round-trip cases).
+`flutter analyze --fatal-infos --fatal-warnings`: clean.
+`word_board_screen_test.dart` needed two additions to keep passing: an
+`initialWordProgressProvider` override (the win flow now reads it) and
+a `_FakeWordProgressRepository` override (this narrow widget test has
+no real Isar instance wired in, unlike `main()` — same "fake the
+service this test doesn't care about" pattern
+`_FakeConsentService`/`_FakeAdService` already established in
+`widget_test.dart`).
+
+**Visual verification, real device, full clean-rebuild cycle**: the
+survey renders correctly and every chip toggles; submitting it
+persists and reactively swaps to `WordHomeScreen`; a **real cold
+restart** (force-stop + relaunch, not just a hot navigation) correctly
+skips the survey the second time — confirming the Isar write/read round
+trip works for real, not just in the fake-repository test. **Not
+verified this way**: actually solving the demo puzzle to completion on
+the device itself — this device's screen-off timeout (30s, fixed;
+`WRITE_SECURE_SETTINGS` denied to the shell user on this unrooted
+phone, so it can't be extended) kept expiring mid-sequence during the
+multi-step crossword solve, and the app doesn't grant itself a
+keep-screen-on flag. The app was confirmed still running and undamaged
+after the attempt (no crash, board screen intact), and the win →
+`unlockNextSection` call itself is exactly what
+`word_board_screen_test.dart` drives end-to-end (a real typed solve
+through a real win, just against the fake repository above) — so this
+gap is judged low-risk, but flagging it plainly rather than claiming a
+device confirmation that didn't actually happen.
+
+**Explicitly still deferred**: the archive/stats UI ("Bulmacalar"/
+"Başarılarım" on `WordHomeScreen`) still shows "coming soon" — a real
+archive of one demo section wouldn't be meaningfully different from
+what already exists, and building it now would be presentation-layer
+work with no real content behind it yet. Revisit once bölüm 6's content
+pipeline produces real tracks.
 
 ### First real-device pass: found and fixed a real board-sizing bug
 (added 2026-09-02)

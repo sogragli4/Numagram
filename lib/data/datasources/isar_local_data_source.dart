@@ -1,7 +1,9 @@
 import 'package:isar_community/isar.dart';
 import 'package:nonogram_daily/data/models/app_settings_model.dart';
 import 'package:nonogram_daily/data/models/puzzle_completion_model.dart';
+import 'package:nonogram_daily/data/models/word_progress_model.dart';
 import 'package:nonogram_daily/domain/entities/app_settings.dart';
+import 'package:nonogram_daily/domain/entities/word/word_progress.dart';
 
 /// Thin wrapper around the Isar instance — every query/write the app
 /// needs, in one place, so repositories don't touch Isar's API directly.
@@ -40,4 +42,14 @@ class IsarLocalDataSource {
 
   Future<void> saveSettings(AppSettingsModel model) =>
       _isar.writeTxn(() => _isar.appSettingsModels.put(model));
+
+  Future<WordProgressModel> getWordProgress() async {
+    final existing = await _isar.wordProgressModels.get(
+      WordProgressModel.fixedId,
+    );
+    return existing ?? WordProgressModel.fromEntity(WordProgress.defaults);
+  }
+
+  Future<void> saveWordProgress(WordProgressModel model) =>
+      _isar.writeTxn(() => _isar.wordProgressModels.put(model));
 }

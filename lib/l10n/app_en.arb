@@ -97,6 +97,54 @@
   "@wordHomeHowToPlayBody": {
     "description": "Body text of the word game's simple how-to-play dialog, shown from its home screen."
   },
+  "wordSurveyTitle": "What are you into?",
+  "@wordSurveyTitle": {
+    "description": "Title of the one-time interest survey shown before the player's first word-game section."
+  },
+  "wordSurveyBody": "Pick as many as you like — your choices shape which puzzles come up first. You can change this later in Settings.",
+  "@wordSurveyBody": {
+    "description": "Body text of the interest survey, explaining that picks become the player's personal question pool."
+  },
+  "wordSurveyTagTarih": "History",
+  "@wordSurveyTagTarih": {
+    "description": "Interest survey tag: the Tarih (history) track."
+  },
+  "wordSurveyTagGenelKultur": "General Knowledge",
+  "@wordSurveyTagGenelKultur": {
+    "description": "Interest survey tag: the Genel Kültür (general knowledge) track."
+  },
+  "wordSurveyTagHukuk": "Law",
+  "@wordSurveyTagHukuk": {
+    "description": "Interest survey tag: the Hukuk (law) track."
+  },
+  "wordSurveyTagGundem": "Current Events",
+  "@wordSurveyTagGundem": {
+    "description": "Interest survey tag: the Gündem (current events) track."
+  },
+  "wordSurveyTagZKusagi": "Gen Z",
+  "@wordSurveyTagZKusagi": {
+    "description": "Interest survey tag: the Z Kuşağı (Gen Z) track, general."
+  },
+  "wordSurveyTagInternetKulturu": "Internet Culture",
+  "@wordSurveyTagInternetKulturu": {
+    "description": "Interest survey tag: the Z Kuşağı → İnternet Kültürü sub-branch."
+  },
+  "wordSurveyTagDiziSinema": "TV & Film",
+  "@wordSurveyTagDiziSinema": {
+    "description": "Interest survey tag: the Z Kuşağı → Dizi & Sinema sub-branch."
+  },
+  "wordSurveyTagMuzikTrendler": "Music & Trends",
+  "@wordSurveyTagMuzikTrendler": {
+    "description": "Interest survey tag: the Z Kuşağı → Müzik & Trendler sub-branch."
+  },
+  "wordSurveyTagOyunKulturu": "Gaming Culture",
+  "@wordSurveyTagOyunKulturu": {
+    "description": "Interest survey tag: the Z Kuşağı → Oyun Kültürü sub-branch."
+  },
+  "wordSurveyTagSosyalMedyaGundemi": "Social Media Buzz",
+  "@wordSurveyTagSosyalMedyaGundemi": {
+    "description": "Interest survey tag: the Z Kuşağı → Sosyal Medya Gündemi sub-branch."
+  },
   "streakLabel": "{count, plural, =0{No streak yet} one{{count} day streak} other{{count} day streak}}",
   "@streakLabel": {
     "description": "Current streak counter shown on the daily screen.",

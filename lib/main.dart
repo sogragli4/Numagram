@@ -11,13 +11,16 @@ import 'package:nonogram_daily/core/theme.dart';
 import 'package:nonogram_daily/data/datasources/isar_local_data_source.dart';
 import 'package:nonogram_daily/data/models/app_settings_model.dart';
 import 'package:nonogram_daily/data/models/puzzle_completion_model.dart';
+import 'package:nonogram_daily/data/models/word_progress_model.dart';
 import 'package:nonogram_daily/data/repositories/settings_repository_impl.dart';
 import 'package:nonogram_daily/data/repositories/streak_repository_impl.dart';
+import 'package:nonogram_daily/data/repositories/word_progress_repository_impl.dart';
 import 'package:nonogram_daily/domain/usecases/apply_streak_freeze.dart';
 import 'package:nonogram_daily/presentation/consent/consent_gate.dart';
 import 'package:nonogram_daily/presentation/gamepicker/game_picker_screen.dart';
 import 'package:nonogram_daily/presentation/onboarding/tutorial_screen.dart';
 import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
+import 'package:nonogram_daily/presentation/word/word_progress_controller.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
@@ -27,12 +30,15 @@ Future<void> main() async {
   final isar = await Isar.open([
     PuzzleCompletionModelSchema,
     AppSettingsModelSchema,
+    WordProgressModelSchema,
   ], directory: directory.path);
 
   final dataSource = IsarLocalDataSource(isar);
   final settingsRepository = SettingsRepositoryImpl(dataSource);
   final streakRepository = StreakRepositoryImpl(dataSource);
+  final wordProgressRepository = WordProgressRepositoryImpl(dataSource);
   final loadedSettings = await settingsRepository.getSettings();
+  final loadedWordProgress = await wordProgressRepository.getProgress();
 
   // Streak freeze (monthly grant + missed-yesterday auto-freeze): best
   // effort, same "never let an optional enhancement crash startup"
@@ -72,6 +78,7 @@ Future<void> main() async {
       overrides: [
         isarProvider.overrideWithValue(isar),
         initialAppSettingsProvider.overrideWithValue(initialSettings),
+        initialWordProgressProvider.overrideWithValue(loadedWordProgress),
         firebaseAnalyticsInstanceProvider.overrideWithValue(analytics),
       ],
       child: const NonogramDailyApp(),

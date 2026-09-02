@@ -6,9 +6,11 @@ import 'package:nonogram_daily/data/datasources/puzzle_generator_data_source.dar
 import 'package:nonogram_daily/data/repositories/puzzle_repository_impl.dart';
 import 'package:nonogram_daily/data/repositories/settings_repository_impl.dart';
 import 'package:nonogram_daily/data/repositories/streak_repository_impl.dart';
+import 'package:nonogram_daily/data/repositories/word_progress_repository_impl.dart';
 import 'package:nonogram_daily/domain/repositories/puzzle_repository.dart';
 import 'package:nonogram_daily/domain/repositories/settings_repository.dart';
 import 'package:nonogram_daily/domain/repositories/streak_repository.dart';
+import 'package:nonogram_daily/domain/repositories/word_progress_repository.dart';
 import 'package:nonogram_daily/domain/usecases/apply_streak_freeze.dart';
 import 'package:nonogram_daily/domain/usecases/generate_daily_puzzle.dart';
 import 'package:nonogram_daily/domain/usecases/interstitial_gate.dart';
@@ -55,6 +57,10 @@ StreakRepository streakRepository(Ref ref) =>
 @riverpod
 SettingsRepository settingsRepository(Ref ref) =>
     SettingsRepositoryImpl(ref.watch(isarLocalDataSourceProvider));
+
+@riverpod
+WordProgressRepository wordProgressRepository(Ref ref) =>
+    WordProgressRepositoryImpl(ref.watch(isarLocalDataSourceProvider));
 
 @riverpod
 GenerateDailyPuzzle generateDailyPuzzle(Ref ref) =>

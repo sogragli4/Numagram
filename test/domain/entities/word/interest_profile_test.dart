@@ -24,5 +24,24 @@ void main() {
       const b = InterestProfile(selectedTagIds: {'a', 'b'});
       expect(a, isNot(b));
     });
+
+    test(
+      'allTagIds excludes karisik but includes every Z Kuşağı sub-branch',
+      () {
+        expect(InterestProfile.allTagIds, isNot(contains('karisik')));
+        expect(InterestProfile.allTagIds, contains('z_kusagi'));
+        expect(
+          InterestProfile.allTagIds.where((id) => id.startsWith('z_kusagi_')),
+          hasLength(5),
+        );
+      },
+    );
+
+    test('allTagIds has no duplicates', () {
+      expect(
+        InterestProfile.allTagIds.toSet().length,
+        InterestProfile.allTagIds.length,
+      );
+    });
   });
 }

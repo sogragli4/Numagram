@@ -28,6 +28,16 @@ abstract final class AdLimits {
   static const int interstitialMinCompletions = 3;
 }
 
+/// Kelime Bulmacası (word game) progression limits — CLAUDE.MD, "Kelime
+/// Bulmacası" bölüm 4 (category-change quota).
+abstract final class WordGameLimits {
+  /// Free category/track switches per calendar day before the
+  /// "unlock via rewarded ad" gate kicks in — same shape as
+  /// [GameLimits.freeArchivePuzzlesPerDay], just a different daily
+  /// counter (`WordProgress.categoryChangeCountFor`).
+  static const int freeCategoryChangesPerDay = 2;
+}
+
 /// Longest-streak milestones that unlock the Phase 5 colour themes — by
 /// streak, never by ad (spec is explicit about this).
 abstract final class ThemeUnlocks {
