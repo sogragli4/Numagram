@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:nonogram_daily/core/design_system/app_colors.dart';
+import 'package:nonogram_daily/core/design_system/app_spacing.dart';
+import 'package:nonogram_daily/core/design_system/app_typography.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/presentation/daily/daily_screen.dart';
+import 'package:nonogram_daily/presentation/shared/app_card.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/word_board_screen.dart';
 
 /// The app's entry point once both game modes exist — two cards, each
@@ -15,13 +19,14 @@ class GamePickerScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
+      backgroundColor: context.appColors.background,
       appBar: AppBar(title: Text(l10n.gamePickerTitle)),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
           child: Wrap(
-            spacing: 20,
-            runSpacing: 20,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.lg,
             alignment: WrapAlignment.center,
             children: [
               _GameCard(
@@ -61,30 +66,22 @@ class _GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return SizedBox(
       width: 160,
       height: 160,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 48, color: colorScheme.primary),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            ],
-          ),
+      child: AppCard(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: context.appColors.orange),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyLarge,
+            ),
+          ],
         ),
       ),
     );

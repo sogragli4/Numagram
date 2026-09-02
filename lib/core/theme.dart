@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nonogram_daily/core/constants.dart';
+import 'package:nonogram_daily/core/design_system/app_colors.dart';
 
 /// An unlockable colour theme: a seed colour plus the longest-streak
 /// milestone that unlocks it. Unlocked by streak, never by ad (Phase 5
@@ -46,6 +47,7 @@ abstract final class AppTheme {
   static ThemeData light(Color seed) => ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(seedColor: seed),
+    extensions: const [AppColors.light],
   );
 
   static ThemeData dark(Color seed) => ThemeData(
@@ -54,6 +56,7 @@ abstract final class AppTheme {
       seedColor: seed,
       brightness: Brightness.dark,
     ),
+    extensions: const [AppColors.dark],
   );
 }
 

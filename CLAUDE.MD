@@ -227,10 +227,197 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 code-review pass, three more locales beyond the locked en/tr, the first
 real-device verification pass, a real board-responsiveness bug fix
 found by it, and Faz 0 + Faz 1 + Faz 2 of a second game mode ("Kelime
-Bulmacası" — see directly below, now playable end to end on a real
-device with placeholder content). Awaiting founder go-ahead to start
-Faz 3 of the word game (persistence + real content), per the same "stop
-after each phase, wait" rule the original project brief itself set.
+Bulmacası" — see directly below), now a real intersecting crossword
+(not the original clue-list mechanic — see the pivot note) with its own
+design system, playable end to end and verified on a real device.
+Awaiting founder go-ahead to start Faz 3 of the word game (persistence
++ real content), per the same "stop after each phase, wait" rule the
+original project brief itself set.
+
+### Kelime Bulmacası pivot: real crossword grid, not a clue list (added 2026-09-02)
+
+After Faz 2 shipped the independent-clue-list mechanic (bölüm 1's
+original decision), the founder sent a reference mockup of a real,
+intersecting crossword grid (numbered cells, YATAY/DİKEY clue lists,
+on-screen keyboard) and asked for that instead. **This supersedes the
+clue-list mechanic entirely** — `WordClue`/`WordPuzzleSection`/
+`WordSession`/`validateLetter` (the clue-list versions) were deleted,
+not kept alongside the new model, matching this project's "don't leave
+dead code around" rule. `WordPuzzleTrack`/`InterestProfile` (the
+category/branching and interest-survey concepts) are untouched — the
+progression model above them didn't change, only what a single
+puzzle *is*.
+
+**Why this doesn't reopen the "hard generator" problem** the original
+clue-list decision was specifically chosen to avoid: content stays
+authored (AI-drafted, founder-reviewed — bölüm 6), never generated
+on-device. A real crossword just needs its grid *shape* + intersections
+baked into the authored data, the same way a clue list needed its
+answers baked in — no runtime word-fitting algorithm was added.
+
+- **`domain/entities/word/crossword_entry.dart`** — `CrosswordEntry`
+  (one placed word: direction, start row/col, clue, Turkish-uppercase
+  answer) + `CrosswordDirection`.
+- **`domain/entities/word/crossword_puzzle.dart`** — `CrosswordPuzzle`
+  (width/height/entries; a precomputed `_lettersByCell` map answers
+  `solutionLetterAt`/`isBlocked`/`clueNumberAt` in O(1) rather than
+  rescanning entries on every keystroke/repaint).
+- **`domain/entities/word/crossword_session.dart`** — `CrosswordSession`,
+  typed letters keyed by **cell** (`(row, col)`), not by clue — an
+  intersecting cell belongs to both an across and a down entry at once,
+  and one typed letter satisfies both simultaneously.
+- **`domain/usecases/word/validate_crossword_letter.dart`** —
+  `validateCrosswordLetter`, cell-based for the same reason session
+  state is; same "no heart cost, wrong letter never written in" contract
+  as before.
+- **`domain/usecases/word/demo_crossword.dart`** — a small, hand-authored
+  5×5 demo (KİTAP crossing KUŞ/TAVUK/PARK) with every intersection
+  verified by hand in the doc comment *and* by a passing test
+  (`crossword_puzzle_test.dart`'s "the shared cell... agrees" cases) —
+  hand-authoring a crossword with no solver to check it is exactly the
+  kind of place a silent contradiction (two entries disagreeing on a
+  shared letter) could slip in unnoticed otherwise.
+- **`presentation/word/wordboard/`** gained `crossword_layout.dart`
+  (`CrosswordLayout`, no clue gutters — numbers print inside their
+  starting cell instead) and `crossword_painter.dart`
+  (`CrosswordPainter`, single `CustomPainter`, same "never one widget
+  per cell" rule as Nonogram's `BoardPainter`). `WordBoardScreen` is a
+  full rewrite: real grid (tap a cell to select the entry it belongs
+  to), an active-clue navigator bar with prev/next, a "Tüm İpuçları"
+  bottom sheet for the full YATAY/DİKEY lists, and a custom on-screen
+  Turkish keyboard (see the design-system section below for why a
+  custom one instead of the system IME).
+- **Mistake count, not hearts.** The founder's reference showed a
+  "Hata: N" counter — implemented as a pure running stat (mirrors the
+  session's own `mistakeCount` field), never a fail-state; the "no heart
+  cost" decision from Faz 1 stands. "Kontrol Et" (check) from the
+  reference was deliberately **not** built — it doesn't have a role
+  given letters are already validated instantly per keystroke; nothing
+  in this design is ever silently wrong for a "check" button to reveal.
+
+**Tests**: rewritten alongside the deletion — `crossword_entry_test.dart`,
+`crossword_puzzle_test.dart`, `crossword_session_test.dart`,
+`validate_crossword_letter_test.dart` (pure domain, including the
+hand-verified-intersection cases above and the same Turkish
+dotted/dotless-İ case the clue-list mechanic was tested for), plus a
+rewritten `word_board_screen_test.dart` driving the on-screen keyboard
+through all four entries end to end via a `ProviderContainer` (not
+widget-tree text finders — grid letters are painted, not `Text`
+widgets, so domain-state assertions are what's actually checkable).
+Passed on the first real attempt both times (clue-list version and this
+rewrite) — the domain layer's own test coverage is what made that
+possible, not luck.
+
+### New design system (added 2026-09-02, founder-specified rules)
+
+The founder gave a full "Development Rules" spec (Material 3, dark/light,
+8px spacing, named border-radius scale, `AppColors`/`AppTypography`/
+`AppSpacing`/`AppRadius`, reusable `AppButton`/`AppCard`, accessibility,
+subtle motion) partway through building the crossword UI. Adopted as
+`core/design_system/` + `presentation/shared/app_button.dart` /
+`app_card.dart`:
+
+- **`app_spacing.dart`** — `AppSpacing` (4/8/12/16/24/32/40/48 +
+  `screenHorizontal` + `minTouchTarget` = 44, matching `BoardLayout`'s
+  existing accessibility constant so the whole app agrees on one
+  number).
+- **`app_radius.dart`** — `AppRadius` (6/10/14/18/24 + matching
+  `BorderRadius` constants).
+- **`app_colors.dart`** — `AppColors`, a `ThemeExtension<AppColors>`
+  (navy/orange brand + background/surface/success/error/warning +
+  puzzle-specific `puzzleCell`/`puzzleCellSelected`/`puzzleWordSelected`/
+  `puzzleBlocked`/`puzzleCorrect`/`puzzleWrong`), registered into both
+  `AppTheme.light`/`dark` so it resolves per-theme like any built-in
+  `ColorScheme` token. Access via `context.appColors`, never by
+  importing `AppColors.light`/`.dark` directly.
+- **`app_typography.dart`** — `AppTypography` (display/headline/body/label,
+  large/medium/small), fixed `TextStyle` constants with **no color set**
+  — `Text`'s style merge falls back to the ambient `DefaultTextStyle`
+  (theme-driven) for any unset field, so these stay light/dark-correct
+  without needing a `BuildContext`. No custom font bundled yet (same
+  "real assets come later" placeholder pattern as the app icon/splash).
+- **`app_motion.dart`** (**this session's own addition**, not in the
+  founder's list — flagged as a suggestion, not decided unilaterally):
+  named `AppMotion.fast`/`normal`/`slow` (150/200/300ms) + a shared
+  curve, since the rules specified those exact durations but hadn't
+  given them a home, and every screen picking its own
+  `Duration(milliseconds: ...)` literal is exactly what the rest of this
+  system exists to avoid.
+- **`AppButton`** — `filled` variant always uses `AppColors.orange`
+  (brand primary), never the ambient `ColorScheme.primary` — the
+  founder's rule says primary actions use the brand orange specifically.
+  `outlined`/`text` stay neutral for secondary actions.
+- **`AppCard`** — flat, `AppColors.surface`, `AppRadius.md`, no heavy
+  shadow ("premium/minimal", not skeuomorphic).
+
+**Scope decision, flagged but not blocking**: this palette is wired in
+for `GamePickerScreen` and the word game's own screens only — Nonogram's
+existing screens keep their own seed-based `ColorScheme`
+(`AppColorTheme`: classic/sunset/forest, unlockable by streak) entirely
+untouched. The founder's "must feel like one coherent product" rule
+could mean this palette should eventually become the *whole* app's
+brand, replacing Nonogram's seed-theme system — that's a bigger,
+separate, riskier retrofit of already-shipped/tested screens, not
+something to do silently as a side effect of building the word game.
+Revisit explicitly if/when asked.
+
+**`AppTextField`/`AppAppBar`/`AppDialog`/`AppBottomSheet`/`AppLoading`
+were not built** — nothing built so far needs a themed text field, a
+custom app bar, or a loading spinner beyond what `AppBar`/`CircularProgressIndicator`
+already provide plainly, and the won-dialog is a single, simple
+`AlertDialog`. Building unused components ahead of a real need is
+exactly what this project's own "no speculative abstraction" rule
+argues against — add each one the first time a screen actually needs it,
+not preemptively.
+
+**Two real bugs found applying this system, both only on the real
+device** — the default `flutter_test` surface is wider than a real
+phone, so neither showed up in automated tests until the tests
+themselves were changed to catch them:
+
+1. **The on-screen keyboard overflowed — twice.** First, a fixed
+   28dp/key × 12 keys (the longest row) overflowed outright. The fix
+   computed key width from the real available screen width via
+   `LayoutBuilder`... but clamped it to a 24dp *floor*, and a genuinely
+   narrow phone's actual fit (~22dp) is below that floor — so the floor
+   itself pushed the row back over budget, overflowing again, by design
+   almost identically to the first bug. Final fix: only an *upper* cap
+   (40dp, so keys don't balloon on a tablet), no lower floor at all —
+   the entire point of computing from real available width is that it
+   always fits exactly, and a floor defeats that guarantee. `_CrosswordKeyboard`'s
+   doc comment carries this lesson for the next size-fitting bug: check
+   whether a "safety" clamp on either end can itself be the thing that
+   breaks the fit, especially a lower floor on the narrow-screen side.
+2. **`context.appColors` crashed in an isolated widget test.** The
+   `ThemeExtension` is only registered by `AppTheme.light`/`dark`
+   (real `main.dart` always uses one of those) — `word_board_screen_test.dart`'s
+   own bare `MaterialApp` set no `theme:` at all, so the null-check threw.
+   Fixed two ways: the test now passes `theme: AppTheme.light(...)`
+   like the real app would, **and** `context.appColors` itself now
+   falls back to `AppColors.light` instead of null-checking, so a future
+   test that forgets this doesn't fail for a reason unrelated to what
+   it's actually checking.
+
+Also caught (not device-only, `flutter test` on the default surface
+found it): `GamePickerScreen`'s card `Text` at `AppTypography.headlineSmall`
+(24pt bold) overflowed a 160×160 card's content box for the longer
+"Nonogram Daily" label — dropped to `AppTypography.bodyLarge`.
+
+The crossword widget test now pins a real-phone-width surface
+(360×800 logical, `tester.view.physicalSize`) specifically so a
+regression of finding #1 fails the test suite instead of needing
+another manual device check to catch it — worth reusing this pattern
+for any future fit-to-width layout in this app.
+
+**Tests**: 179/179 passing (174 domain/usecase tests carried over minus
+the 4 deleted clue-list files' cases, plus new crossword-domain and
+widget-interaction coverage — see the pivot section above for exact
+file names). `flutter analyze --fatal-infos --fatal-warnings`: clean.
+Verified twice on the real connected device (once for the crossword
+grid itself, once after the design-system retrofit + keyboard fix) —
+screenshots showed the cream/navy/orange palette, the fully-visible
+keyboard, and the grid all rendering correctly with no debug-overflow
+banner.
 
 ### New initiative: "Kelime Bulmacası" — a second game mode (Faz 0, added 2026-09-02)
 
