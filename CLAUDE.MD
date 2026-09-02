@@ -224,11 +224,42 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 ## PROJECT STATUS (living section — update at the end of every phase)
 
 ### Current phase: Phase 5 complete, plus five post-v1 features, a
-code-review pass, and a fourth locale (interactive tutorial, progressive
-difficulty, sound effects, achievement badges, streak freeze, the
-review fixes, and German, below). Awaiting founder direction on what's
-next (real store credentials/signing, a device/emulator pass, or
-further scope beyond v1).
+code-review pass, and three more locales beyond the locked en/tr
+(interactive tutorial, progressive difficulty, sound effects,
+achievement badges, streak freeze, the review fixes, and
+German/Spanish/French, below). Six locales total. Awaiting founder
+direction on what's next (real store credentials/signing, a
+device/emulator pass, or further scope beyond v1).
+
+### Fifth and sixth locales: Spanish and French (added 2026-09-02)
+
+Same founder ask as the German locale immediately below, extended to
+the other two candidate markets from that original short list.
+
+- **`lib/l10n/app_es.arb`** and **`lib/l10n/app_fr.arb`**: same
+  approach as `app_de.arb` — every key translated, `@@locale` set,
+  no code changes needed (picked up automatically by `flutter
+  gen-l10n` / `AppLocalizations.supportedLocales`). Brand name
+  translated per locale, matching the `tr`/`de` precedent: Spanish
+  `"Nonogram Diario"`, French `"Nonogram Quotidien"`.
+- **`store/listing_es.md`** and **`store/listing_fr.md`**: same
+  structure as the other locale listings. One thing worth flagging for
+  next time: the first draft of both App Store keyword fields (≤100
+  chars) came in slightly over the limit with a fuller phrase-based
+  translation (e.g. Spanish `"puzzle de lógica"` /
+  `"rompecabezas diario"` together with everything else pushed the
+  Spanish field to ~101 chars) — trimmed to shorter single-word
+  equivalents (`"lógica"`, `"offline"`/`"hors ligne"`) to fit. Worth
+  double-checking char counts by hand for any future locale rather
+  than assuming a direct translation of the English keyword list fits
+  the same limit — Spanish/French keyword phrases run longer than
+  their English equivalents.
+- **Verified**: `flutter gen-l10n` regenerated
+  `app_localizations_es.dart`/`app_localizations_fr.dart` with no
+  missing-key warnings, `flutter analyze --fatal-infos
+  --fatal-warnings` clean, `flutter test` 147/147 (unchanged, same
+  reasoning as the German locale addition — no test depends on a fixed
+  locale count).
 
 ### Fourth locale: German (added 2026-09-02)
 
