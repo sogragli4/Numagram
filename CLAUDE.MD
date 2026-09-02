@@ -225,13 +225,83 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ### Current phase: Phase 5 complete, plus five post-v1 features, a
 code-review pass, three more locales beyond the locked en/tr, the first
-real-device verification pass, and a real board-responsiveness bug fix
-found by it (interactive tutorial, progressive difficulty, sound
-effects, achievement badges, streak freeze, the review fixes,
-German/Spanish/French, and the two sections below). Six locales total.
-Awaiting founder direction on what's next (real store credentials/
-signing, or further scope beyond v1) — the "device/emulator pass" gap
-noted in every earlier phase is now closed, see below.
+real-device verification pass, a real board-responsiveness bug fix
+found by it, and Faz 0 of a second game mode ("Kelime Bulmacası" — see
+directly below). Awaiting founder go-ahead to start Faz 1 of the word
+game (domain layer), per the same "stop after Phase 0, show the tree,
+wait" rule the original project brief itself set.
+
+### New initiative: "Kelime Bulmacası" — a second game mode (Faz 0, added 2026-09-02)
+
+The founder's real-device playtest of the fixed board (see below) led
+to a broader "does this game even land" conversation, which became a
+concrete proposal for a second, word-based game mode living alongside
+Nonogram — classic Turkish newspaper-puzzle format: a short clue, a
+row of blank letter boxes, instant per-letter correct/incorrect
+feedback. Built out as a long, section-by-section design proposal
+(published as an artifact this session, not committed to the repo —
+the decisions below are the durable record of it) and refined over
+several founder rounds to the decisions locked in below.
+
+**Locked decisions for this feature** (do not re-litigate; flag once
+if one seems wrong, then proceed):
+
+| Area | Decision |
+|---|---|
+| Relationship to Nonogram | **Option B** — same app, same package/store listing. A new game-picker screen ("Nonogram" / "Kelime Bulmacası" cards) becomes `_HomeRouter`'s post-tutorial destination, replacing the direct-to-`DailyScreen` jump. Nonogram itself is untouched. |
+| Core mechanic | Clue list, not a kesişen crossword grid — every clue is independent (no word-intersection fitting algorithm needed, unlike Nonogram's Phase 1 solver). Per-letter live validation, no heart/mistake cost (typing and correcting is normal; wrong letters just flash and clear). |
+| Progression | Every main category is its own unbounded numbered chain ("Tarih 1, Tarih 2, Tarih 3, ..."), not a small fixed set of sections. A chain's next section unlocks once the current one is fully solved — completion-gated, not date-gated like Nonogram's streak. |
+| Launch categories | Six tracks: **Tarih, Genel Kültür, Hukuk, Gündem, Z Kuşağı, Karışık** (Karışık = always-open mixed default). Bilim & Teknoloji / Spor / Sanat & Sinema flagged as later additions, deliberately not in the launch set (each category needs its own real content pipeline — launching too many thin ones at once was rejected). |
+| Z Kuşağı branching | Z Kuşağı alone is **founder-confirmed to branch** into five sub-tracks, each with its own numbered chain: **İnternet Kültürü, Dizi & Sinema, Müzik & Trendler, Oyun Kültürü, Sosyal Medya Gündemi**. Other categories stay flat at launch — branching them too is a possible future move, not a launch requirement. |
+| Onboarding | A multi-select "ilgi alanı anketi" (interest survey) is shown once, right after the shared tutorial, before the player's first section — same `hasSeenTutorial`-flag pattern, a new `hasSeenInterestSurvey`. Tags span every track/sub-track, not just the six top-level names. Explicit in-app copy tells the player their picks become their personal question pool. The survey only re-orders/prioritizes Hikaye Modu content — it never locks any track out of Kategori Modu. |
+| Category-change quota | **2 free changes per day**, founder-confirmed. A 3rd+ change the same day requires a rewarded-ad watch — the exact same date-keyed daily-counter shape as `AppSettings.archiveUnlocksCountFor`, just a new field for this feature. |
+| Two play modes | **Hikaye Modu** (sequential, survey-prioritized, mixed tracks — the "daily ritual" analog) and **Kategori Modu** (pick any unlocked track, play any of its opened sections in any order — the Free Play analog). |
+| Content source | **A — AI-drafted, then human-reviewed.** Bulk draft clue/answer sets per track, founder (or someone the founder designates) reviews every one before it ships — non-negotiable for Tarih/Hukuk specifically, where a wrong fact is much worse than a placeholder icon ever was. Licensing a puzzle database, or crowdsourcing from players, were both considered and set aside for later (crowdsourcing is a good post-launch fit for Z Kuşağı specifically, once there's an audience to source from). |
+| Monetization | Same ad-only, opt-in model as Nonogram: hint reveals a letter, early-section-unlock mirrors archive-unlock, category-change-beyond-quota is a new rewarded placement, interstitial only in Kategori Modu after a completed section and never in Hikaye Modu (mirrors "never after the daily puzzle"). |
+| Branding | **Open, deliberately deferred.** Whether "Nonogram Daily" as a name/icon still fits an app that now hosts two unrelated puzzle genres is a real question, but not one that blocks starting the build — revisit at store-readiness time if it becomes actual friction. |
+
+**What's reused vs. new**, for whoever picks this up: essentially all
+of `services/` (ads, consent, analytics, notifications), the
+Riverpod+Isar plumbing, the theme/sound/l10n infrastructure, and the
+lock-card unlock-hint UI pattern (`AppColorTheme.isUnlockedAt` /
+`FreePlaySizePreset.isUnlockedAt`) carry over untouched. What's new is
+narrow: a handful of domain entities, a few small usecases, a puzzle
+content pipeline (bundled JSON, not generated — no `Isolate` solver
+needed, unlike Nonogram), and two small presentation screens (a
+`ListView`-based board, not a `CustomPainter` grid — far fewer cells,
+not performance-critical the way Nonogram's board is).
+
+**Faz 0 (this session): empty placeholder skeleton only**, mirroring
+exactly how the original project's own Phase 0 worked — structure
+first, logic later, stop and wait:
+
+```
+lib/domain/entities/word/
+  word_clue.dart              # WordClue
+  word_puzzle_track.dart      # WordPuzzleTrack — one chain (a category or Z Kuşağı sub-track)
+  word_puzzle_section.dart    # WordPuzzleSection — one numbered link in a chain
+  interest_profile.dart       # InterestProfile — the survey's saved selections
+lib/domain/usecases/word/
+  validate_letter.dart        # validateLetter() — per-letter check, top-level function (mirrors applyMove)
+  unlock_next_section.dart    # UnlockNextSection
+  apply_interest_selection.dart  # ApplyInterestSelection
+  spend_category_change.dart  # SpendCategoryChange — reuses the archiveUnlocksCountFor pattern
+lib/presentation/gamepicker/
+  game_picker_screen.dart     # GamePickerScreen — the new post-tutorial home
+lib/presentation/word/
+  onboarding/interest_survey_screen.dart  # InterestSurveyScreen
+  wordboard/word_board_screen.dart        # WordBoardScreen
+```
+
+Every file is a doc comment plus a bare class (or, for `validateLetter`,
+a bare function) — no fields, no logic, nothing wired into `main.dart`
+or `core/injection.dart` yet. `flutter analyze --fatal-infos
+--fatal-warnings` clean, `flutter test` 147/147 unchanged (nothing here
+is exercised yet, by design). **Faz 1 is the real domain layer** —
+`WordClue`/`WordPuzzleTrack`/`WordPuzzleSection` fleshed out, pure-Dart
+`validateLetter` logic with its own tests written first, matching how
+Nonogram's own Phase 1 worked (test before or alongside `domain/` code).
+Do not start Faz 1 without an explicit founder go-ahead.
 
 ### First real-device pass: found and fixed a real board-sizing bug
 (added 2026-09-02)
