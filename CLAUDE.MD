@@ -341,21 +341,127 @@ issues, all fixed**:
    newspaper" card look instead of looking like a plain Material
    default card dropped onto a photo.
 
+**Round 5 — one more founder bug report, plus a request reversing part
+of round 4**:
+
+1. **"Beyaz düz bir şerit var, sayfaya tam oturması gerekiyor."** Not
+   visible in any static screenshot taken during verification — because
+   it only appeared on an actual drag gesture, not a cold render.
+   Root cause: Flutter Material's default `GlowingOverscrollIndicator`
+   paints a flat white glow at a scrollable's boundary the moment a
+   drag reaches the end, and round 4's fit-to-height math made the
+   `SingleChildScrollView` *usually* not need scrolling, but never
+   actually disabled scrolling or its overscroll feedback — any real
+   drag (which a static screenshot can't reproduce) still triggered the
+   glow, reading as a stray white band against the parchment photo.
+   Fixed with `ScrollConfiguration(...).copyWith(overscroll: false)`
+   wrapping the scroll view, verified this time by actually performing
+   a drag gesture on the real device via `adb shell input swipe` and
+   screenshotting immediately after — a static cold-launch screenshot
+   alone would have missed this exact bug again.
+2. **Calendar icon reinstated, positioned left of settings** — reverses
+   round 4's removal, per the founder's very next round of feedback.
+   The photo's own baked-in calendar artwork was never actually erased
+   (can't be, short of editing the photo itself), so removing the
+   *button* just left mismatched decorative art with nothing behind it;
+   a real, functional button in that spot both restores the action and
+   reads better against the leftover artwork than a bare icon. Lesson
+   for this file: this is the second reversal in a row on this exact
+   element (present → removed → present) — if a third round asks for
+   another change here, check with the founder about the end state
+   before touching it again rather than assuming which direction is
+   "final."
+
+**Round 6 — one more founder bug report, on the very same corner as the
+`_SquareIconButton` fix in round 3.** "İlgili ana menü üzerindeki en
+sağ üstte yer alan takvim simgesini kaldırabilir misin ayarların
+solundaki değil sağında yer alıyor." Round 3 fixed the *settings* icon
+disappearing off-screen from `BoxFit.cover`'s crop; it never occurred
+to check whether the *calendar* icon — closer to the source photo's
+center, so less aggressively cropped — was still partially surviving
+that same crop as an unwanted leftover. It was: the real, correctly-
+positioned `_SquareIconButton` row (calendar left of settings) rendered
+fine, but the photo's own baked-in calendar glyph, drawn nearer the
+photo's true top-right corner, still peeked out to the *right* of the
+real settings button on this device — a second, stray, misplaced
+calendar icon the founder correctly identified as being on the wrong
+side of settings entirely.
+
+**First fix attempt made it worse, caught before shipping.** A
+`Positioned` patch — a `LinearGradient`-faded `DecoratedBox` in
+`appColors.background` — was added to paint over just that corner.
+On-device it looked worse than the bug: a visibly hard-edged rectangle
+sitting on top of the photo's own texture, its own boundary readable as
+a seam regardless of the gradient fade, since the *shape* doing the
+covering was still a flat rectangle. Reverted immediately rather than
+shipped.
+
+**Actual fix: shift the crop, don't paint over it.** `Image.asset` gained
+`alignment: const Alignment(-0.6, 0)` — since this photo's aspect ratio
+makes `BoxFit.cover` height-dominant (no vertical crop margin exists to
+lose by leaving Y centered, see the code comment), shifting only X left
+moves the visible crop window away from the photo's right edge, so the
+stray calendar glyph now falls outside the frame entirely — no seam,
+because nothing is being covered, just a different slice of the same
+photo is shown. Confirmed on-device: the newspaper clipping (top-left)
+and pencil (bottom-left) are slightly more visible now, the glasses/
+coffee cup (right side) slightly more cropped, and the stray icon is
+gone with no visible patch artifact.
+
+**Lesson for this file, worth remembering for any future
+photo-crop-dependent UI**: a `BoxFit.cover`'d photo with several
+distinct visual elements near its edges (as this one has: two icon
+glyphs, a masthead, and four corner props) can crop *each one*
+differently depending on how close to center it sits in the source —
+fixing one edge element's crop behavior doesn't mean the others are
+safe on every device; each one is worth a dedicated on-device check
+before considering the photo integration finished. And when a photo
+element needs to disappear, prefer adjusting what's cropped over
+painting a patch on top — a patch has to fight the photo's own
+texture/shadow/lighting to blend in, while a crop shift has no seam by
+construction.
+
+**Round 7 — the founder replaced the background photo itself with a
+revised version** (`word_home_background_main.jfif`), asking this
+screen be based on it. The old photo (`word_home_background.jfif`) and
+`WordHomeClueStripPainter` (the DİKEY/YATAY overlay painter from round
+3) were both deleted outright, not kept alongside the new asset — this
+new photo bakes in its *own* DİKEY/YATAY clue lists directly, so the
+separate overlay would have doubled that text on screen exactly the
+way drawing a masthead on top of the old photo would have doubled it.
+Two structural differences from the old photo, both handled:
+
+- **No baked-in icon artwork at all** — the whole crop-alignment
+  workaround from round 3/6 (`alignment: const Alignment(-0.6, 0)`,
+  the abandoned patch-overlay attempt) is gone; `Image.asset` uses
+  plain default-centered `BoxFit.cover` again. `_SquareIconButton`'s
+  doc comment was rewritten to stop centering the explanation on that
+  now-resolved bug and instead state the standing principle: real
+  Flutter buttons beat photo-drawn icons for tappability/accessibility
+  regardless of whether the current photo happens to have a cropping
+  problem.
+- **Masthead sits compactly top-left instead of centered** — the
+  `LayoutBuilder`'s `mastheadGap` clamp range was lowered from
+  `(120.0, 340.0)` to `(80.0, 260.0)` so cards can start higher without
+  covering it, matching the new photo's shorter masthead footprint.
+
 **Also carried over from round 1, still true**: settings still opens
 the real, shared `SettingsScreen` (not a per-game duplicate — theme/
 sound/notification settings are app-wide); no dedicated test file for
 this screen (a straightforward composition of already-tested pieces
-with no new domain logic, verified by driving every button on the real
-device instead, matching how `GamePickerScreen` itself was verified).
+with no new domain logic, verified by driving every button — and, as
+of round 5, every gesture — on the real device instead, matching how
+`GamePickerScreen` itself was verified).
 
-**Known trade-off, flagged rather than silently accepted**: the photo
-is one static asset with Turkish masthead text baked in, so non-Turkish
-locales (en/de/es/fr) will still show a Turkish masthead until/unless a
-per-locale image is supplied — this screen has no way to swap in
-translated text over a flattened photo. The now-unreferenced
+**Known trade-off, flagged rather than silently accepted, still
+applies to the round 7 photo**: it's one static asset with Turkish
+masthead + clue-list text baked in, so non-Turkish locales (en/de/es/fr)
+will still show Turkish text until/unless a per-locale image is
+supplied — this screen has no way to swap in translated text over a
+flattened photo. The now-unreferenced
 `wordHomeMastheadEyebrow`/`wordHomeMastheadTitle`/`wordHomeTagline` ARB
 keys were deliberately left in place rather than deleted, in case a
-per-locale image (or a return to the drawn masthead) revives them.
+per-locale image (or a return to a drawn masthead) revives them.
 
 **Tests**: still 179/179 passing, `flutter analyze --fatal-infos
 --fatal-warnings` clean, after every round above. **Visual
@@ -365,9 +471,11 @@ every interactive element actually tapped and screenshotted each time
 crossword board, confirming the keyboard-overflow fix from the pivot
 still holds; "Arşiv"/"Başarılarım"/"Liderlik Tablosu"/"Mağaza" show the
 coming-soon snackbar; "Nasıl Oynanır" opens its dialog; settings opens
-the real `SettingsScreen`); this is what caught all three real bugs
-documented above — none of them were visible in `flutter test`'s
-default-width surface.
+the real `SettingsScreen`); this is what caught the real bugs
+documented above across every round — none of them were visible in
+`flutter test`'s default-width surface, and one (round 5's overscroll
+glow) wasn't visible in a static screenshot either, only an actual
+drag gesture on the device.
 
 ### Kelime Bulmacası pivot: real crossword grid, not a clue list (added 2026-09-02)
 

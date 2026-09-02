@@ -5,37 +5,38 @@ import 'package:nonogram_daily/core/design_system/app_spacing.dart';
 import 'package:nonogram_daily/core/design_system/app_typography.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/presentation/settings/settings_screen.dart';
-import 'package:nonogram_daily/presentation/word/home/word_home_clue_strip_painter.dart';
 import 'package:nonogram_daily/presentation/word/wordboard/word_board_screen.dart';
 
-/// The word game's own hub screen, its background now the founder's own
-/// supplied artwork (`assets/images/word_home_background.jfif`) rather
-/// than this app's earlier vector approximation of the same "Günlük
-/// Bulmaca" newspaper-desk composition.
+/// The word game's own hub screen, its background the founder's own
+/// supplied artwork (`assets/images/word_home_background_main.jfif` — a
+/// revised version of an earlier photo, see below) rather than this
+/// app's original vector approximation of the same "Günlük Bulmaca"
+/// newspaper-desk composition.
 ///
-/// The photo already bakes in the masthead text, so this screen no longer
-/// draws its own copy of that — doing so on top would visibly double it.
-/// The settings icon is a different story: the photo bakes an icon in
-/// too, but `BoxFit.cover` crops a different slice of the photo on every
-/// device, and on the real device this app is tested on that crop pushed
-/// the photo's own settings icon off-screen entirely (see
-/// `_SquareIconButton`'s doc comment) — so settings stays a real, visible
-/// Flutter button, styled to match the photo's own icon look. The
-/// calendar icon was dropped outright, per founder feedback — it only
-/// ever duplicated what "Bulmacalar" (the card, and the bottom-nav tab)
-/// already does. What else stays as real Flutter widgets: the DİKEY/YATAY
-/// decorative clue-strip overlay (painted on canvas, not baked into the
-/// photo, so it can be app-themed), the five action cards, and the bottom
-/// navigation bar.
+/// The photo bakes in the masthead text **and** its own DİKEY/YATAY
+/// decorative clue lists, so this screen draws neither itself — doing so
+/// on top would visibly double them, exactly like it would for text.
+/// This is a **second, replacement photo**: the first
+/// (`word_home_background.jfif`) baked in calendar/settings icon
+/// artwork that `BoxFit.cover` cropped inconsistently across devices
+/// (see git history / CLAUDE.MD for that whole saga) — this one has no
+/// baked-in icon artwork at all, so the crop-alignment workaround that
+/// photo needed is gone too; default centered `BoxFit.cover` is enough
+/// here. Calendar/settings stay real, visible Flutter buttons regardless
+/// (see `_SquareIconButton`'s doc comment) — not because this photo
+/// still has the same cropping problem, but because a photo-drawn icon
+/// was never going to be as reliably tappable/accessible as a real
+/// widget in the first place.
 ///
 /// **Known trade-off, flagged rather than silently accepted**: the photo
-/// is a single static asset with its Turkish masthead text baked in, so
-/// non-Turkish locales (en/de/es/fr) will still show a Turkish masthead
-/// until/unless a per-locale image is supplied — this screen has no way
-/// to swap in translated text over a flattened photo. The now-unreferenced
-/// `wordHomeMastheadEyebrow`/`wordHomeMastheadTitle`/`wordHomeTagline` ARB
-/// keys were deliberately left in place rather than deleted, in case a
-/// per-locale image (or a return to the drawn masthead) revives them.
+/// is a single static asset with its Turkish masthead + clue-list text
+/// baked in, so non-Turkish locales (en/de/es/fr) will still show
+/// Turkish text until/unless a per-locale image is supplied — this
+/// screen has no way to swap in translated text over a flattened photo.
+/// The now-unreferenced `wordHomeMastheadEyebrow`/`wordHomeMastheadTitle`/
+/// `wordHomeTagline` ARB keys were deliberately left in place rather than
+/// deleted, in case a per-locale image (or a return to a drawn masthead)
+/// revives them.
 ///
 /// Two of the five buttons ("Liderlik Tablosu") and one bottom-nav tab
 /// ("Mağaza") are visible, per the founder's reference mockup, but stay
@@ -80,17 +81,8 @@ class WordHomeScreen extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/word_home_background.jfif',
+              'assets/images/word_home_background_main.jfif',
               fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: ExcludeSemantics(
-              child: CustomPaint(
-                painter: WordHomeClueStripPainter(
-                  color: appColors.navy.withValues(alpha: 0.16),
-                ),
-              ),
             ),
           ),
           SafeArea(
@@ -107,7 +99,11 @@ class WordHomeScreen extends StatelessWidget {
                   // previously overflowed on the real test device, pushing
                   // the last card (and the nav bar reading as "stuck at
                   // the bottom") behind a scroll the founder's mockup
-                  // never intended.
+                  // never intended. The clamp's lower bound is smaller
+                  // than it was for the first background photo — this
+                  // one's masthead sits compactly top-left rather than
+                  // centered, so cards can start higher without covering
+                  // it.
                   const cardCount = 5;
                   const cardGap = AppSpacing.sm;
                   const iconRowHeight = AppSpacing.minTouchTarget;
@@ -123,67 +119,90 @@ class WordHomeScreen extends StatelessWidget {
                       cardsHeight +
                       trailingPadding;
                   final mastheadGap = (constraints.maxHeight - fixedChrome)
-                      .clamp(120.0, 340.0);
+                      .clamp(80.0, 260.0);
 
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: trailingPadding),
-                    child: Column(
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: _SquareIconButton(
-                            icon: Icons.settings_rounded,
-                            tooltip: l10n.settingsTitle,
-                            navy: appColors.navy,
-                            background: appColors.background,
-                            onPressed: () => Navigator.of(context).push(
+                  // The Material glow overscroll indicator painted a flat
+                  // white band at the scroll boundary whenever a drag
+                  // reached the end — jarring against the parchment photo,
+                  // and confusing on a screen that (per the fit-to-height
+                  // math above) isn't actually meant to need scrolling.
+                  // Disabled outright rather than just relying on content
+                  // fitting exactly, since a drag gesture can still trigger
+                  // it briefly even when there's nothing further to reveal.
+                  return ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(
+                      context,
+                    ).copyWith(overscroll: false),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: trailingPadding),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              _SquareIconButton(
+                                icon: Icons.calendar_month_rounded,
+                                tooltip: l10n.archiveTitle,
+                                navy: appColors.navy,
+                                background: appColors.background,
+                                onPressed: () => _showComingSoon(context, l10n),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              _SquareIconButton(
+                                icon: Icons.settings_rounded,
+                                tooltip: l10n.settingsTitle,
+                                navy: appColors.navy,
+                                background: appColors.background,
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const SettingsScreen(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: mastheadGap),
+                          _ActionCard(
+                            icon: Icons.grid_view_rounded,
+                            title: l10n.wordHomeNewPuzzleButtonLabel,
+                            subtitle: l10n.wordHomeNewPuzzleSubtitle,
+                            emphasized: true,
+                            onTap: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => const SettingsScreen(),
+                                builder: (_) => const WordBoardScreen(),
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: mastheadGap),
-                        _ActionCard(
-                          icon: Icons.grid_view_rounded,
-                          title: l10n.wordHomeNewPuzzleButtonLabel,
-                          subtitle: l10n.wordHomeNewPuzzleSubtitle,
-                          emphasized: true,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => const WordBoardScreen(),
-                            ),
+                          const SizedBox(height: cardGap),
+                          _ActionCard(
+                            icon: Icons.star_rounded,
+                            title: l10n.archiveTitle,
+                            subtitle: l10n.wordHomeArchiveSubtitle,
+                            onTap: () => _showComingSoon(context, l10n),
                           ),
-                        ),
-                        const SizedBox(height: cardGap),
-                        _ActionCard(
-                          icon: Icons.star_rounded,
-                          title: l10n.archiveTitle,
-                          subtitle: l10n.wordHomeArchiveSubtitle,
-                          onTap: () => _showComingSoon(context, l10n),
-                        ),
-                        const SizedBox(height: cardGap),
-                        _ActionCard(
-                          icon: Icons.emoji_events_rounded,
-                          title: l10n.achievementsSectionTitle,
-                          subtitle: l10n.wordHomeAchievementsSubtitle,
-                          onTap: () => _showComingSoon(context, l10n),
-                        ),
-                        const SizedBox(height: cardGap),
-                        _ActionCard(
-                          icon: Icons.leaderboard_rounded,
-                          title: l10n.wordHomeLeaderboardButtonLabel,
-                          subtitle: l10n.wordHomeLeaderboardSubtitle,
-                          onTap: () => _showComingSoon(context, l10n),
-                        ),
-                        const SizedBox(height: cardGap),
-                        _ActionCard(
-                          icon: Icons.menu_book_rounded,
-                          title: l10n.settingsHowToPlayLabel,
-                          subtitle: l10n.wordHomeHowToPlaySubtitle,
-                          onTap: () => _showHowToPlay(context, l10n),
-                        ),
-                      ],
+                          const SizedBox(height: cardGap),
+                          _ActionCard(
+                            icon: Icons.emoji_events_rounded,
+                            title: l10n.achievementsSectionTitle,
+                            subtitle: l10n.wordHomeAchievementsSubtitle,
+                            onTap: () => _showComingSoon(context, l10n),
+                          ),
+                          const SizedBox(height: cardGap),
+                          _ActionCard(
+                            icon: Icons.leaderboard_rounded,
+                            title: l10n.wordHomeLeaderboardButtonLabel,
+                            subtitle: l10n.wordHomeLeaderboardSubtitle,
+                            onTap: () => _showComingSoon(context, l10n),
+                          ),
+                          const SizedBox(height: cardGap),
+                          _ActionCard(
+                            icon: Icons.menu_book_rounded,
+                            title: l10n.settingsHowToPlayLabel,
+                            subtitle: l10n.wordHomeHowToPlaySubtitle,
+                            onTap: () => _showHowToPlay(context, l10n),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -199,14 +218,14 @@ class WordHomeScreen extends StatelessWidget {
   }
 }
 
-/// The background photo bakes in its own calendar/settings icon artwork
-/// near this corner, but `BoxFit.cover` crops a different slice of the
-/// photo depending on each device's aspect ratio — on a real device this
-/// cropped the settings icon off-screen entirely (see `WordHomeScreen`'s
-/// doc comment), leaving an invisible, undiscoverable tap target. Real,
-/// visible buttons here — styled to match the photo's own icon look —
-/// stay reliably visible and tappable regardless of how the photo gets
-/// cropped.
+/// Real, visible Flutter buttons rather than relying on any icon artwork
+/// baked into the background photo — the current photo
+/// (`word_home_background_main.jfif`) doesn't bake in icon artwork at
+/// all, but an earlier version of it did, and `BoxFit.cover` cropped
+/// that inconsistently across devices (see `WordHomeScreen`'s doc
+/// comment for that history). Kept as real widgets going forward on
+/// principle, not just to dodge that specific bug: a photo-drawn icon
+/// can never be as reliably tappable/accessible as an actual widget.
 class _SquareIconButton extends StatelessWidget {
   const _SquareIconButton({
     required this.icon,
