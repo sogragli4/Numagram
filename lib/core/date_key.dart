@@ -16,3 +16,12 @@ DateTime parseDateKey(String key) {
     int.parse(parts[2]),
   );
 }
+
+/// Canonical `yyyy-MM` calendar-month key — used to track "has this
+/// month's grant already happened" style state (e.g. the monthly streak
+/// freeze grant) without needing a full date.
+String formatMonthKey(DateTime date) {
+  final y = date.year.toString().padLeft(4, '0');
+  final m = date.month.toString().padLeft(2, '0');
+  return '$y-$m';
+}

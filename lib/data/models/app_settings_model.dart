@@ -1,4 +1,5 @@
 import 'package:isar_community/isar.dart';
+import 'package:nonogram_daily/core/constants.dart';
 import 'package:nonogram_daily/domain/entities/app_settings.dart';
 
 part 'app_settings_model.g.dart';
@@ -22,7 +23,10 @@ class AppSettingsModel {
     ..archiveUnlocksCount = entity.archiveUnlocksCount
     ..selectedThemeId = entity.selectedThemeId
     ..hasSeenTutorial = entity.hasSeenTutorial
-    ..soundEnabled = entity.soundEnabled;
+    ..soundEnabled = entity.soundEnabled
+    ..streakFreezesAvailable = entity.streakFreezesAvailable
+    ..frozenDateKeys = entity.frozenDateKeys
+    ..freezeGrantMonthKey = entity.freezeGrantMonthKey;
 
   static const int fixedId = 0;
 
@@ -46,6 +50,11 @@ class AppSettingsModel {
   // Same reasoning again: an existing install predates this field too —
   // default to sound on, matching `AppSettings.defaults`.
   bool soundEnabled = true;
+  // Same reasoning again: an existing install predates the streak-freeze
+  // feature, so it reads back as if freshly starting it.
+  int streakFreezesAvailable = StreakFreezeConfig.startingFreezes;
+  List<String> frozenDateKeys = [];
+  String? freezeGrantMonthKey;
 
   AppSettings toEntity() => AppSettings(
     notificationHour: notificationHour,
@@ -60,5 +69,8 @@ class AppSettingsModel {
     selectedThemeId: selectedThemeId,
     hasSeenTutorial: hasSeenTutorial,
     soundEnabled: soundEnabled,
+    streakFreezesAvailable: streakFreezesAvailable,
+    frozenDateKeys: frozenDateKeys,
+    freezeGrantMonthKey: freezeGrantMonthKey,
   );
 }

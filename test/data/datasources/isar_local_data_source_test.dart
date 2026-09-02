@@ -113,5 +113,19 @@ void main() {
       expect(settings.notificationHour, 20);
       expect(settings.notificationsEnabled, isTrue);
     });
+
+    test('saves and reads back streak-freeze state', () async {
+      final updated = AppSettings.defaults.copyWith(
+        streakFreezesAvailable: 2,
+        frozenDateKeys: ['2026-09-09', '2026-08-15'],
+        freezeGrantMonthKey: () => '2026-09',
+      );
+      await dataSource.saveSettings(AppSettingsModel.fromEntity(updated));
+
+      final settings = (await dataSource.getSettings()).toEntity();
+      expect(settings.streakFreezesAvailable, 2);
+      expect(settings.frozenDateKeys, ['2026-09-09', '2026-08-15']);
+      expect(settings.freezeGrantMonthKey, '2026-09');
+    });
   });
 }

@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
+import 'package:nonogram_daily/core/constants.dart';
+import 'package:nonogram_daily/core/date_key.dart';
 import 'package:nonogram_daily/core/injection.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/core/theme.dart';
@@ -10,6 +12,8 @@ import 'package:nonogram_daily/data/datasources/isar_local_data_source.dart';
 import 'package:nonogram_daily/data/models/app_settings_model.dart';
 import 'package:nonogram_daily/data/models/puzzle_completion_model.dart';
 import 'package:nonogram_daily/data/repositories/settings_repository_impl.dart';
+import 'package:nonogram_daily/data/repositories/streak_repository_impl.dart';
+import 'package:nonogram_daily/domain/usecases/streak_freeze.dart';
 import 'package:nonogram_daily/presentation/consent/consent_gate.dart';
 import 'package:nonogram_daily/presentation/daily/daily_screen.dart';
 import 'package:nonogram_daily/presentation/onboarding/tutorial_screen.dart';
@@ -25,12 +29,50 @@ Future<void> main() async {
     AppSettingsModelSchema,
   ], directory: directory.path);
 
-  final settingsRepository = SettingsRepositoryImpl(IsarLocalDataSource(isar));
+  final dataSource = IsarLocalDataSource(isar);
+  final settingsRepository = SettingsRepositoryImpl(dataSource);
   final loadedSettings = await settingsRepository.getSettings();
+
+  // Streak freeze: check for a new monthly grant, then whether yesterday
+  // needs auto-freezing to protect an in-progress streak — both derived
+  // fresh at cold start rather than tracked incrementally, same
+  // "recompute from source data" reasoning as StreakRecord itself.
+  final today = DateTime.now();
+  final todayMonthKey = formatMonthKey(today);
+  var freezesAvailable = loadedSettings.streakFreezesAvailable;
+  var freezeGrantMonthKey = loadedSettings.freezeGrantMonthKey;
+  if (isNewMonthlyFreezeGrantDue(
+    todayMonthKey: todayMonthKey,
+    lastGrantMonthKey: freezeGrantMonthKey,
+  )) {
+    freezesAvailable = (freezesAvailable + StreakFreezeConfig.monthlyGrant)
+        .clamp(0, StreakFreezeConfig.maxFreezesHeld);
+    freezeGrantMonthKey = todayMonthKey;
+  }
+
+  var frozenDateKeys = loadedSettings.frozenDateKeys;
+  final completedDates = await StreakRepositoryImpl(
+    dataSource,
+  ).getCompletedDates();
+  final frozenDates = frozenDateKeys.map(parseDateKey).toSet();
+  if (shouldAutoFreezeYesterday(
+    completedDates: completedDates,
+    frozenDates: frozenDates,
+    today: today,
+    freezesAvailable: freezesAvailable,
+  )) {
+    final yesterdayKey = formatDateKey(today.subtract(const Duration(days: 1)));
+    frozenDateKeys = [...frozenDateKeys, yesterdayKey];
+    freezesAvailable -= 1;
+  }
+
   // Bump once per cold start — Phase 4's "never during the first session
   // ever" interstitial rule reads this back as sessionCount > 1.
   final initialSettings = loadedSettings.copyWith(
     sessionCount: loadedSettings.sessionCount + 1,
+    streakFreezesAvailable: freezesAvailable,
+    frozenDateKeys: frozenDateKeys,
+    freezeGrantMonthKey: () => freezeGrantMonthKey,
   );
   await settingsRepository.updateSettings(initialSettings);
 

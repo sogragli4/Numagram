@@ -86,5 +86,44 @@ void main() {
       );
       expect(streak.currentStreak, 3);
     });
+
+    test('a frozen gap day keeps the current streak alive', () {
+      final streak = StreakRecord.compute(
+        completedDates: {_d(2026, 9, 8), _d(2026, 9, 10)},
+        frozenDates: {_d(2026, 9, 9)},
+        today: _d(2026, 9, 10),
+      );
+      expect(streak.currentStreak, 3);
+    });
+
+    test('a frozen day counts toward the longest streak too', () {
+      final streak = StreakRecord.compute(
+        completedDates: {_d(2026, 9, 1), _d(2026, 9, 3)},
+        frozenDates: {_d(2026, 9, 2)},
+        today: _d(2026, 9, 3),
+      );
+      expect(streak.longestStreak, 3);
+    });
+
+    test('a frozen day is never reported as an actual completion', () {
+      final streak = StreakRecord.compute(
+        completedDates: {_d(2026, 9, 8), _d(2026, 9, 10)},
+        frozenDates: {_d(2026, 9, 9)},
+        today: _d(2026, 9, 10),
+      );
+      expect(streak.completedDates, {_d(2026, 9, 8), _d(2026, 9, 10)});
+      expect(streak.frozenDates, {_d(2026, 9, 9)});
+    });
+
+    test('a two-day gap is not bridged by a single frozen day', () {
+      final streak = StreakRecord.compute(
+        completedDates: {_d(2026, 9, 5), _d(2026, 9, 10)},
+        frozenDates: {_d(2026, 9, 8)},
+        today: _d(2026, 9, 10),
+      );
+      // The 6th and 9th are still missing, so the run ending today is
+      // only the 10th itself.
+      expect(streak.currentStreak, 1);
+    });
   });
 }

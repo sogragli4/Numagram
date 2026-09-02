@@ -1,3 +1,5 @@
+import 'package:nonogram_daily/core/constants.dart';
+
 /// Persisted user preferences.
 class AppSettings {
   const AppSettings({
@@ -13,6 +15,9 @@ class AppSettings {
     required this.selectedThemeId,
     required this.hasSeenTutorial,
     required this.soundEnabled,
+    required this.streakFreezesAvailable,
+    required this.frozenDateKeys,
+    required this.freezeGrantMonthKey,
   });
 
   static const defaults = AppSettings(
@@ -28,6 +33,9 @@ class AppSettings {
     selectedThemeId: 'classic',
     hasSeenTutorial: false,
     soundEnabled: true,
+    streakFreezesAvailable: StreakFreezeConfig.startingFreezes,
+    frozenDateKeys: [],
+    freezeGrantMonthKey: null,
   );
 
   /// Default daily-reminder time, per the Phase 3 spec.
@@ -74,6 +82,19 @@ class AppSettings {
   /// haptics — a player may want one without the other.
   final bool soundEnabled;
 
+  /// Unused streak freezes on hand — see `domain/usecases/streak_freeze.dart`.
+  final int streakFreezesAvailable;
+
+  /// `yyyy-MM-dd` keys of dates a streak freeze bridged. Not actual
+  /// completions — kept separate from real completion records so
+  /// statistics/achievements never count a frozen day as solved.
+  final List<String> frozenDateKeys;
+
+  /// `yyyy-MM` of the last calendar month a streak-freeze grant was
+  /// applied for; `null` before the first one ever. A different key than
+  /// the current month means a new grant is due.
+  final String? freezeGrantMonthKey;
+
   /// Archive puzzles already opened on [todayKey] — 0 if that's not the
   /// date [archiveUnlocksCount] was tracking (i.e. the day rolled over).
   int archiveUnlocksCountFor(String todayKey) =>
@@ -92,6 +113,9 @@ class AppSettings {
     String? selectedThemeId,
     bool? hasSeenTutorial,
     bool? soundEnabled,
+    int? streakFreezesAvailable,
+    List<String>? frozenDateKeys,
+    String? Function()? freezeGrantMonthKey,
   }) => AppSettings(
     notificationHour: notificationHour ?? this.notificationHour,
     notificationMinute: notificationMinute ?? this.notificationMinute,
@@ -108,5 +132,11 @@ class AppSettings {
     selectedThemeId: selectedThemeId ?? this.selectedThemeId,
     hasSeenTutorial: hasSeenTutorial ?? this.hasSeenTutorial,
     soundEnabled: soundEnabled ?? this.soundEnabled,
+    streakFreezesAvailable:
+        streakFreezesAvailable ?? this.streakFreezesAvailable,
+    frozenDateKeys: frozenDateKeys ?? this.frozenDateKeys,
+    freezeGrantMonthKey: freezeGrantMonthKey != null
+        ? freezeGrantMonthKey()
+        : this.freezeGrantMonthKey,
   );
 }

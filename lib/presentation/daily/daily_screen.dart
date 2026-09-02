@@ -160,6 +160,13 @@ class DailyScreen extends ConsumerWidget {
               data: (streak) {
                 final today = _dateOnly(DateTime.now());
                 final completedToday = streak.completedDates.contains(today);
+                final yesterday = today.subtract(const Duration(days: 1));
+                final streakJustSaved = streak.frozenDates.contains(yesterday);
+                final freezesAvailable = ref.watch(
+                  appSettingsControllerProvider.select(
+                    (s) => s.streakFreezesAvailable,
+                  ),
+                );
                 return Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -171,6 +178,33 @@ class DailyScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(l10n.longestStreakLabel(streak.longestStreak)),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.ac_unit,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            l10n.streakFreezesAvailableLabel(freezesAvailable),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      if (streakJustSaved) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.streakFreezeUsedYesterdayMessage,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                      ],
                       const SizedBox(height: 32),
                       if (completedToday)
                         Text(l10n.todayCompletedLabel)

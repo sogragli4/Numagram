@@ -6,22 +6,29 @@ class StreakRecord {
     required this.currentStreak,
     required this.longestStreak,
     required this.completedDates,
+    required this.frozenDates,
   });
 
   factory StreakRecord.compute({
     required Set<DateTime> completedDates,
     required DateTime today,
+    Set<DateTime> frozenDates = const {},
   }) {
-    final normalized = completedDates.map(_dateOnly).toSet();
+    final normalizedCompleted = completedDates.map(_dateOnly).toSet();
+    final normalizedFrozen = frozenDates.map(_dateOnly).toSet();
+    // A streak freeze bridges a missed day for continuity purposes only —
+    // it never counts as an actual completion, so `completedDates` below
+    // stays exactly what was actually solved.
+    final bridged = {...normalizedCompleted, ...normalizedFrozen};
     final todayOnly = _dateOnly(today);
 
     var current = 0;
-    if (normalized.contains(todayOnly) ||
-        normalized.contains(todayOnly.subtract(const Duration(days: 1)))) {
-      var cursor = normalized.contains(todayOnly)
+    if (bridged.contains(todayOnly) ||
+        bridged.contains(todayOnly.subtract(const Duration(days: 1)))) {
+      var cursor = bridged.contains(todayOnly)
           ? todayOnly
           : todayOnly.subtract(const Duration(days: 1));
-      while (normalized.contains(cursor)) {
+      while (bridged.contains(cursor)) {
         current++;
         cursor = cursor.subtract(const Duration(days: 1));
       }
@@ -30,7 +37,7 @@ class StreakRecord {
     var longest = 0;
     var running = 0;
     DateTime? previous;
-    for (final date in normalized.toList()..sort()) {
+    for (final date in bridged.toList()..sort()) {
       if (previous != null &&
           date.difference(previous) == const Duration(days: 1)) {
         running++;
@@ -44,13 +51,19 @@ class StreakRecord {
     return StreakRecord(
       currentStreak: current,
       longestStreak: longest,
-      completedDates: normalized,
+      completedDates: normalizedCompleted,
+      frozenDates: normalizedFrozen,
     );
   }
 
   final int currentStreak;
   final int longestStreak;
   final Set<DateTime> completedDates;
+
+  /// Dates a streak freeze bridged — not actual completions, just a gap
+  /// that didn't break the streak. See [StreakRecord.compute]'s doc
+  /// comment.
+  final Set<DateTime> frozenDates;
 
   static DateTime _dateOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);

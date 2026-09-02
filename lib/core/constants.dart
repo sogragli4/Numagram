@@ -62,3 +62,20 @@ abstract final class AchievementThresholds {
   /// Minimum side length for the "solved a big puzzle" badge.
   static const int bigPuzzleMinSide = 15;
 }
+
+/// Streak freeze: missing a single day doesn't break the streak if a
+/// freeze is available (see `domain/usecases/streak_freeze.dart`) — the
+/// biggest single churn driver in daily-puzzle apps is "missed one day,
+/// felt the streak was already ruined, stopped opening the app."
+abstract final class StreakFreezeConfig {
+  /// Every player starts with one, so the very first missed day is
+  /// already covered.
+  static const int startingFreezes = 1;
+
+  /// Freezes never stockpile past this — a safety net, not a resource to
+  /// hoard indefinitely.
+  static const int maxFreezesHeld = 2;
+
+  /// Freezes granted per new calendar month, up to [maxFreezesHeld].
+  static const int monthlyGrant = 1;
+}

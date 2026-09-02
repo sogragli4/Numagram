@@ -223,11 +223,97 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete, plus four post-v1 features
-(interactive tutorial, progressive difficulty, sound effects, and
-achievement badges, below). Awaiting founder direction on what's next
-(real store credentials/signing, a device/emulator pass, or further scope
-beyond v1).
+### Current phase: Phase 5 complete, plus five post-v1 features
+(interactive tutorial, progressive difficulty, sound effects, achievement
+badges, and streak freeze, below). Awaiting founder direction on what's
+next (real store credentials/signing, a device/emulator pass, or further
+scope beyond v1).
+
+### Post-v1: Streak freeze (added 2026-09-02)
+
+Missing exactly one day no longer breaks the streak, if a freeze is
+available — the biggest single churn driver in daily-puzzle apps is
+"missed one day, felt the streak was already ruined, stopped opening the
+app." Founder-requested as a retention feature, scoped down from a
+broader "keep the user in the game" / "separate kids area" ask — the
+kids-area half was explicitly turned down: it would mean re-architecting
+the ad/consent stack around COPPA/GDPR-K rules, in direct conflict with
+the locked "not primarily child-directed" decision, for unclear payoff.
+
+- **`domain/entities/streak_record.dart`**: `StreakRecord.compute` gained
+  an optional `frozenDates` parameter (default `{}`, so every existing
+  call site keeps working unchanged). A frozen date bridges a gap for
+  *both* current- and longest-streak continuity, exactly like a real
+  completion — but is never counted as one: `StreakRecord.completedDates`
+  stays exactly the real completions, with `frozenDates` now exposed
+  alongside it as its own field. `StreakRepository.getStreak`/
+  `UpdateStreak` deliberately stay freeze-*unaware* (a repository should
+  be about completions, not settings-driven freeze state, and
+  `UpdateStreak`'s returned `StreakRecord` is never actually read by any
+  caller today); `daily_controller.dart`'s `streakForToday` is the one
+  place completions (from `StreakRepository`) and freeze state (from
+  `AppSettings`) get combined for display.
+- **`domain/usecases/streak_freeze.dart`**: two pure functions.
+  `shouldAutoFreezeYesterday` — freezes are *automatic*, not a manual
+  "activate" button: if yesterday is missing but the day before it was
+  completed or frozen (i.e. there was an actual streak worth protecting
+  — this never manufactures one from nothing) and a freeze is on hand,
+  yesterday gets bridged. Only ever bridges a single day; a two-day-old
+  gap is a genuinely broken streak. `isNewMonthlyFreezeGrantDue` — new
+  `AppSettings` fields `streakFreezesAvailable` (starts at 1),
+  `frozenDateKeys`, and `freezeGrantMonthKey` grant +1 per new calendar
+  month (capped at 2 held), the same "reset when the date-key rolls
+  over" pattern `archiveUnlocksDateKey` already uses, just monthly
+  instead of daily (new `formatMonthKey` alongside `formatDateKey` in
+  `core/date_key.dart`).
+- **Applied once at cold start, in `main.dart`**, right alongside the
+  existing `sessionCount` bump — not from a widget, and not incrementally
+  from a Riverpod provider's `build()`: both the monthly-grant check and
+  the auto-freeze-yesterday check are derived fresh from
+  `StreakRepository.getCompletedDates()` and the just-loaded
+  `AppSettings`, then folded into the single `updateSettings` write that
+  was already happening there. Mirrors exactly how `sessionCount` itself
+  is already handled — one deterministic recompute per launch, not
+  incremental state tracked provider-side.
+- **`presentation/daily/daily_screen.dart`**: a small snowflake icon +
+  "N streak freezes available" line under the longest-streak label, and
+  (for exactly one day — `frozenDates` naturally stops containing
+  "yesterday" the day after, no extra "just happened" tracking needed) a
+  "A streak freeze covered yesterday" note when applicable.
+- **Two real, non-obvious bugs caught while wiring this up, both in test
+  code rather than app code**:
+  1. `daily_controller.dart`'s new `streakForToday` tried
+     `ref.watch(appSettingsControllerProvider.select((s) => ...))` —
+     every other `.select` call in this codebase is from a *widget's*
+     `WidgetRef` (`main.dart`, `daily_screen.dart`); `@riverpod`
+     *function* providers use the plain `Ref` from `package:riverpod`
+     (not `flutter_riverpod`), which doesn't expose `.select` the same
+     way. Caught by `flutter analyze`, not a test. Fixed by watching the
+     whole settings object and reading the field off it — simpler code,
+     and the rebuild-scoping `.select` buys isn't worth much for a
+     `Future`-returning provider that isn't on a hot path anyway.
+  2. A throwaway golden-check test pumping `DailyScreen` directly (wrapped
+     in a hand-built `MaterialApp`, bypassing `ConsentGate`/`_HomeRouter`/
+     `NonogramDailyApp`) hung forever in the loading state — `flutter
+     test`'s full suite (which exercises `DailyScreen` only through the
+     real `NonogramDailyApp` shell, per `widget_test.dart`) was unaffected
+     the whole time, so this was never a real app bug, just an
+     under-specified test harness. Fixed by pumping `NonogramDailyApp`
+     itself, matching `widget_test.dart`'s established pattern, instead of
+     trying to construct `DailyScreen`'s ancestry by hand.
+- **New test**: `test/streak_freeze_cold_start_test.dart` replicates
+  `main()`'s exact cold-start sequence against a real (temp-directory)
+  Isar instance end to end — the pure decision functions have their own
+  unit tests, but the actual `AppSettings.copyWith` → `AppSettingsModel`
+  → Isar → back field-by-field wiring is exactly the class of bug this
+  project's history has caught before (see Phase 3's "a real bug found"
+  note), and nothing else exercises `main()`'s own orchestration code —
+  `widget_test.dart` overrides `initialAppSettingsProvider` directly,
+  bypassing `main()` entirely.
+- **Tests**: 136/136 passing — 4 new `streak_freeze_cold_start_test.dart`
+  end-to-end cases, 10 new `streak_freeze_test.dart` pure-function cases,
+  4 new `streak_record_test.dart` frozen-date cases, 1 new
+  `isar_local_data_source_test.dart` round-trip case.
 
 ### Post-v1: Achievement badges (added 2026-09-02)
 
@@ -1076,7 +1162,7 @@ not a runtime fallback.
 ### Toolchain on the primary dev machine
 - Flutter 3.35.5 (stable), Dart 3.9.2, Windows 10, no `make` installed.
 - `flutter analyze --fatal-infos --fatal-warnings`: clean.
-- `flutter test`: 117/117 passing (as of the post-v1 achievement-badges
+- `flutter test`: 136/136 passing (as of the post-v1 streak-freeze
   feature). Requires `make test-setup` / `./make.ps1 test-setup` once
   first (copies Isar's native library into the project root — see
   Phase 3 deviations).

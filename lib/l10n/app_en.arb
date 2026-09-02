@@ -417,5 +417,18 @@
   "achievementGoBigDescription": "Solve a 20×20 puzzle",
   "@achievementGoBigDescription": {
     "description": "Description of the go-big achievement."
+  },
+  "streakFreezesAvailableLabel": "{count, plural, =0{No streak freezes left} one{{count} streak freeze available} other{{count} streak freezes available}}",
+  "@streakFreezesAvailableLabel": {
+    "description": "Shows how many streak freezes the player has on hand.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakFreezeUsedYesterdayMessage": "A streak freeze covered yesterday — your streak continues!",
+  "@streakFreezeUsedYesterdayMessage": {
+    "description": "Shown on the daily screen for one day after a streak freeze auto-protected a missed day."
   }
 }

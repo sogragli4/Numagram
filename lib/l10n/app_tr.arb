@@ -94,5 +94,7 @@
   "achievementBigThinkerTitle": "Büyük Düşünür",
   "achievementBigThinkerDescription": "15×15 veya daha büyük bir bulmaca çözün",
   "achievementGoBigTitle": "Büyük Oyna",
-  "achievementGoBigDescription": "20×20 bir bulmaca çözün"
+  "achievementGoBigDescription": "20×20 bir bulmaca çözün",
+  "streakFreezesAvailableLabel": "{count, plural, =0{Seri koruma kalmadı} other{{count} seri koruma mevcut}}",
+  "streakFreezeUsedYesterdayMessage": "Bir seri koruma dünü kapsadı — seriniz devam ediyor!"
 }
