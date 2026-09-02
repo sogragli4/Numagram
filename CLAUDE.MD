@@ -226,10 +226,10 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 ### Current phase: Phase 5 complete, plus five post-v1 features, a
 code-review pass, three more locales beyond the locked en/tr, the first
 real-device verification pass, a real board-responsiveness bug fix
-found by it, and Faz 0 of a second game mode ("Kelime Bulmacası" — see
-directly below). Awaiting founder go-ahead to start Faz 1 of the word
-game (domain layer), per the same "stop after Phase 0, show the tree,
-wait" rule the original project brief itself set.
+found by it, and Faz 0 + Faz 1 of a second game mode ("Kelime
+Bulmacası" — see directly below). Awaiting founder go-ahead to start
+Faz 2 of the word game, per the same "stop after each phase, wait" rule
+the original project brief itself set.
 
 ### New initiative: "Kelime Bulmacası" — a second game mode (Faz 0, added 2026-09-02)
 
@@ -293,15 +293,58 @@ lib/presentation/word/
   wordboard/word_board_screen.dart        # WordBoardScreen
 ```
 
-Every file is a doc comment plus a bare class (or, for `validateLetter`,
-a bare function) — no fields, no logic, nothing wired into `main.dart`
-or `core/injection.dart` yet. `flutter analyze --fatal-infos
---fatal-warnings` clean, `flutter test` 147/147 unchanged (nothing here
-is exercised yet, by design). **Faz 1 is the real domain layer** —
-`WordClue`/`WordPuzzleTrack`/`WordPuzzleSection` fleshed out, pure-Dart
-`validateLetter` logic with its own tests written first, matching how
-Nonogram's own Phase 1 worked (test before or alongside `domain/` code).
-Do not start Faz 1 without an explicit founder go-ahead.
+Faz 0's files started as a doc comment plus a bare class/function each,
+nothing wired into `main.dart` or `core/injection.dart` — that part is
+still true of the four remaining Faz 0 placeholders
+(`UnlockNextSection`, `ApplyInterestSelection`, `SpendCategoryChange`,
+`GamePickerScreen`, `InterestSurveyScreen`, `WordBoardScreen`), which
+stay untouched until the phase that actually needs persistence/UI.
+
+**Faz 1 (this session): the pure-Dart domain layer — done.** Scoped
+narrower than Nonogram's own Phase 1, deliberately: this game's "hard
+part" is authored content, not a generator/solver, so there's no
+algorithmic engine to build here, just the entities and the one piece
+of real logic (letter validation).
+
+- **`core/turkish_text.dart`** — `toTurkishUpperCase(String)`. Written
+  first, before anything that depends on it: Dart's built-in
+  `String.toUpperCase()` is not Turkish-locale-aware and turns lowercase
+  `'i'` into dotless `'I'`, when the correct Turkish uppercase is dotted
+  `'İ'` (dotless `'I'` is instead the uppercase of `'ı'`). Every answer
+  comparison in this feature depends on getting this right — a bug here
+  would silently mark correct Turkish answers wrong. 7 tests, including
+  the dotted/dotless distinction on real Turkish words ("istanbul" →
+  "İSTANBUL", "kırıkkale" → "KIRIKKALE").
+- **`domain/entities/word/`** — `WordClue` (normalizes `answer` to
+  Turkish uppercase in its constructor, so every later comparison is
+  plain string equality, never a repeated casing step), `WordPuzzleTrack`
+  + `WordTrackCategory` enum (six categories; only `zKusagi` tracks carry
+  a non-null `subBranchLabel` — branching is data-driven, not a special
+  type), `WordPuzzleSection` (`isCompleteGiven(Set<String> solvedClueIds)`
+  — pure, caller supplies whatever "solved" set it tracks, mirrors the
+  read-only-repository-state pattern `StreakRecord.compute` already
+  uses), `InterestProfile` (order-independent set equality/hashing, since
+  tag selection is inherently unordered).
+- **`domain/usecases/word/validate_letter.dart`** — `validateLetter`, the
+  word-game analog of `applyMove`: per-letter rather than per-cell, and
+  with the "no heart cost" rule (bölüm 2 of the proposal) built directly
+  into its contract — a wrong letter's `LetterCheckResult.updatedLetters`
+  comes back *identical* to what went in, never partially written, so the
+  caller has nothing to roll back before showing the flash-and-clear.
+  5 tests, including the Turkish dotted/dotless-i case checked against a
+  real answer ("FATİH") rather than only against the casing helper in
+  isolation — the two could theoretically disagree even with the helper
+  itself correct, if `validateLetter` used plain `toUpperCase()` on the
+  typed letter instead of `toTurkishUpperCase()`.
+
+**Tests**: 174/174 passing (147 + 27 new). `flutter analyze --fatal-infos
+--fatal-warnings`: clean. **Faz 2 is the next stop — do not start it
+without an explicit founder go-ahead**, same rule as every phase before
+it. Faz 2's likely scope: flesh out the four remaining Faz 0 usecase
+placeholders against real (in-memory first, Isar-backed once a
+`data/` layer exists for this feature) repository interfaces, and/or
+start the `GamePickerScreen`/`WordBoardScreen` UI against this now-real
+domain layer — whichever the founder wants to see first.
 
 ### First real-device pass: found and fixed a real board-sizing bug
 (added 2026-09-02)
