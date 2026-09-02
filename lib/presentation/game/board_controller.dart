@@ -12,6 +12,7 @@ import 'package:nonogram_daily/domain/usecases/use_hint.dart';
 import 'package:nonogram_daily/domain/usecases/validate_move.dart';
 import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
 import 'package:nonogram_daily/services/ads/ad_service.dart';
+import 'package:nonogram_daily/services/sound/sound_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'board_controller.g.dart';
@@ -372,15 +373,26 @@ class BoardController extends _$BoardController {
 
     if (result.wasWrongFill) {
       unawaited(HapticFeedback.heavyImpact());
+      unawaited(_playSound(SoundEffect.mistake));
     } else if (intent == CellState.marked) {
       unawaited(HapticFeedback.selectionClick());
+      unawaited(_playSound(SoundEffect.mark));
     } else {
       unawaited(HapticFeedback.lightImpact());
+      unawaited(_playSound(SoundEffect.fill));
     }
     if (!wasWon && result.session.won) {
       unawaited(HapticFeedback.mediumImpact());
+      unawaited(_playSound(SoundEffect.win));
       unawaited(_onWin(result.session));
     }
+  }
+
+  Future<void> _playSound(SoundEffect effect) {
+    if (!ref.read(appSettingsControllerProvider).soundEnabled) {
+      return Future.value();
+    }
+    return ref.read(soundServiceProvider).play(effect);
   }
 
   /// Records every win — daily/archive *and* free play — so the

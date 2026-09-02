@@ -70,6 +70,10 @@
   "@colorblindPaletteLabel": {
     "description": "Toggle label for the colourblind-safe board color palette."
   },
+  "soundEffectsLabel": "Sound effects",
+  "@soundEffectsLabel": {
+    "description": "Toggle label for gameplay sound effects (fill/mark/mistake/win), independent of haptics."
+  },
   "outOfHeartsTitle": "Out of Hearts",
   "@outOfHeartsTitle": {
     "description": "Title shown when the player runs out of mistake hearts."

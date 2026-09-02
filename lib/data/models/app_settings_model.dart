@@ -21,7 +21,8 @@ class AppSettingsModel {
     ..archiveUnlocksDateKey = entity.archiveUnlocksDateKey
     ..archiveUnlocksCount = entity.archiveUnlocksCount
     ..selectedThemeId = entity.selectedThemeId
-    ..hasSeenTutorial = entity.hasSeenTutorial;
+    ..hasSeenTutorial = entity.hasSeenTutorial
+    ..soundEnabled = entity.soundEnabled;
 
   static const int fixedId = 0;
 
@@ -42,6 +43,9 @@ class AppSettingsModel {
   // Same reasoning: an existing install predates this field, and should
   // see the tutorial once rather than crash on read.
   bool hasSeenTutorial = false;
+  // Same reasoning again: an existing install predates this field too —
+  // default to sound on, matching `AppSettings.defaults`.
+  bool soundEnabled = true;
 
   AppSettings toEntity() => AppSettings(
     notificationHour: notificationHour,
@@ -55,5 +59,6 @@ class AppSettingsModel {
     archiveUnlocksCount: archiveUnlocksCount,
     selectedThemeId: selectedThemeId,
     hasSeenTutorial: hasSeenTutorial,
+    soundEnabled: soundEnabled,
   );
 }

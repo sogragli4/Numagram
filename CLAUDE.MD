@@ -223,10 +223,66 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete, plus two post-v1 features (interactive
-tutorial and progressive difficulty, below). Awaiting founder direction on
-what's next (real store credentials/signing, a device/emulator pass, or
-further scope beyond v1).
+### Current phase: Phase 5 complete, plus three post-v1 features
+(interactive tutorial, progressive difficulty, and sound effects, below).
+Awaiting founder direction on what's next (real store credentials/signing,
+a device/emulator pass, or further scope beyond v1).
+
+### Post-v1: Sound effects (added 2026-09-02)
+
+Enriches the Phase 2 spec's "haptics on fill, mark, mistake, and win" with
+an actual sound for each of those same four events.
+
+- **`services/sound/`**: `sound_service.dart` (`SoundService` interface +
+  `SoundEffect` enum — `fill`/`mark`/`mistake`/`win`) and
+  `audioplayers_sound_service.dart` (`AudioPlayersSoundService`, backed by
+  the new `audioplayers: ^6.1.0` dependency — resolved cleanly against
+  this machine's pinned Dart 3.9.2, unlike several other packages in this
+  project's history). One `AudioPool` per effect (audioplayers' own
+  purpose-built pre-loaded, low-latency player pool for "extremely quick
+  firing, repetitive ... sounds" — exactly the fill/mark case during a
+  fast paint-drag stroke), created lazily on first use. Registered as
+  `soundServiceProvider` (`@Riverpod(keepAlive: true)`, same lifetime
+  pattern as the other cross-cutting services) in `core/injection.dart`.
+- **No real sound assets available in this environment** (same situation
+  as Phase 5's app icon) — `tool/generate_sound_assets.dart` synthesizes
+  four short placeholder WAV files pure-Dart (sine-tone blips, no audio
+  tool needed) into `assets/sounds/`: a bright blip for fill, a shorter
+  lower click for mark, a deliberately less pleasant low two-tone buzz
+  for mistake, a rising four-note major arpeggio for win. Swap the
+  generated files for real sound design whenever the founder has some —
+  `SoundService` just plays whatever is at those paths, no other code
+  changes needed.
+- **New `AppSettings.soundEnabled`** (default `true`), same non-late
+  Isar-migration pattern as every other Phase 5+ settings field, with a
+  new "Sound effects" toggle in `SettingsScreen` (above the colourblind
+  palette toggle) — independent of haptics, per the founder's original
+  ask ("Sesler/haptik zenginleştirme") naming both separately. Wired into
+  `BoardController._applyAndCommit` and `TutorialController.tapCell`
+  alongside their existing haptic calls, each gated on the same
+  `soundEnabled` check.
+- **A real bug caught by the test suite, not by inspection**: the first
+  version's `AudioPlayersSoundService.play()` wrapped everything in
+  `try/catch`, matching every other service's "never let this fail
+  loudly" pattern — but `audioplayers`' `AudioPlayer()` constructor
+  registers a *global event-channel listener* that, with no real plugin
+  registered (as in any widget test), throws a `MissingPluginException`
+  **asynchronously, from a different callback than the one `play()`
+  awaits** — invisible to that try/catch, and surfaced instead as an
+  unhandled test failure ("EXCEPTION CAUGHT BY SERVICES LIBRARY"), not a
+  quietly-swallowed no-op. `test/presentation/onboarding/
+  tutorial_screen_test.dart` (the one test that taps real cells and so
+  actually triggers a sound call) caught it; `test/widget_test.dart`'s
+  two tests don't tap gameplay cells and so were never affected. Fixed
+  the same way this project already fixes exactly this class of problem
+  (`_FakeConsentService`/`_FakeAdService` in `widget_test.dart`): a
+  `_FakeSoundService` override in the affected test, not a change to the
+  real service — the real app has the actual plugin registered, so this
+  is a test-environment-only gap, not a production one.
+- **Tests**: 111/111 still passing (no new dedicated `SoundService` unit
+  tests — there's no interesting logic to test beyond "does it call the
+  platform plugin," which the fake above exists specifically to avoid
+  touching in a test).
 
 ### Post-v1: Progressive difficulty (added 2026-09-02)
 

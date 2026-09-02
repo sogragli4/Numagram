@@ -15,6 +15,7 @@
   "boardModeMark": "İşaretle",
   "undoButtonLabel": "Geri Al",
   "colorblindPaletteLabel": "Renk körü dostu palet",
+  "soundEffectsLabel": "Ses efektleri",
   "outOfHeartsTitle": "Canlarınız Bitti",
   "outOfHeartsMessage": "Çok fazla hata yaptınız. Tekrar dener misiniz?",
   "retryButtonLabel": "Tekrar Dene",

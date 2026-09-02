@@ -14,6 +14,19 @@ import 'package:nonogram_daily/presentation/game/board_layout.dart';
 import 'package:nonogram_daily/presentation/game/board_painter.dart';
 import 'package:nonogram_daily/presentation/onboarding/tutorial_screen.dart';
 import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
+import 'package:nonogram_daily/services/sound/sound_service.dart';
+
+/// No real `audioplayers` plugin is registered in a widget test —
+/// `AudioPlayersSoundService.play()`'s own try/catch only covers its
+/// synchronous await chain, not the `MissingPluginException` thrown
+/// asynchronously by the global event-channel listener `AudioPlayer()`
+/// sets up internally, which escapes as an unhandled test failure.
+/// Overriding with a fake avoids touching the real plugin at all here,
+/// same reasoning as `test/widget_test.dart`'s fake consent/ad services.
+class _FakeSoundService implements SoundService {
+  @override
+  Future<void> play(SoundEffect effect) async {}
+}
 
 void main() {
   testWidgets('walking through every guided step reaches the finished view and '
@@ -35,6 +48,7 @@ void main() {
         overrides: [
           isarProvider.overrideWithValue(isar),
           initialAppSettingsProvider.overrideWithValue(AppSettings.defaults),
+          soundServiceProvider.overrideWithValue(_FakeSoundService()),
         ],
       );
       addTearDown(container.dispose);

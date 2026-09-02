@@ -20,6 +20,8 @@ import 'package:nonogram_daily/services/consent/consent_service.dart';
 import 'package:nonogram_daily/services/consent/ump_consent_service.dart';
 import 'package:nonogram_daily/services/notifications/local_notification_service.dart';
 import 'package:nonogram_daily/services/notifications/notification_service.dart';
+import 'package:nonogram_daily/services/sound/audioplayers_sound_service.dart';
+import 'package:nonogram_daily/services/sound/sound_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'injection.g.dart';
@@ -86,3 +88,6 @@ AdService adService(Ref ref) => MaxAdService(MaxAdConfig.fromDartDefines());
 /// survive a restart (see `InterstitialGate`).
 @Riverpod(keepAlive: true)
 InterstitialGate interstitialGate(Ref ref) => InterstitialGate();
+
+@Riverpod(keepAlive: true)
+SoundService soundService(Ref ref) => AudioPlayersSoundService();

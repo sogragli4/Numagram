@@ -22,6 +22,9 @@ class AppSettingsController extends _$AppSettingsController {
   Future<void> setColorblindPalette({required bool enabled}) =>
       _update(state.copyWith(colorblindPalette: enabled));
 
+  Future<void> setSoundEnabled({required bool enabled}) =>
+      _update(state.copyWith(soundEnabled: enabled));
+
   /// [title]/[body] are only used if the reminder is currently enabled —
   /// changing the time re-schedules it, which needs them again.
   Future<void> setNotificationTime({

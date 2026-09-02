@@ -80,6 +80,11 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           SwitchListTile(
+            title: Text(l10n.soundEffectsLabel),
+            value: settings.soundEnabled,
+            onChanged: (value) => controller.setSoundEnabled(enabled: value),
+          ),
+          SwitchListTile(
             title: Text(l10n.colorblindPaletteLabel),
             value: settings.colorblindPalette,
             onChanged: (value) =>

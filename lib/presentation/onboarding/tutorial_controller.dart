@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:nonogram_daily/core/injection.dart';
 import 'package:nonogram_daily/domain/entities/game_session.dart';
 import 'package:nonogram_daily/domain/entities/tutorial_step.dart';
 import 'package:nonogram_daily/domain/usecases/tutorial_script.dart';
 import 'package:nonogram_daily/domain/usecases/validate_move.dart';
+import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
+import 'package:nonogram_daily/services/sound/sound_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tutorial_controller.g.dart';
@@ -87,11 +90,19 @@ class TutorialController extends _$TutorialController {
     );
     state = state.copyWith(session: result.session);
     unawaited(HapticFeedback.lightImpact());
+    unawaited(_playSound(SoundEffect.fill));
 
     final allTargetsMet = step.targetCells.every(
       (cell) => state.session.stateAt(cell.$1, cell.$2) == step.requiredIntent,
     );
     if (allTargetsMet) _advanceStep();
+  }
+
+  Future<void> _playSound(SoundEffect effect) {
+    if (!ref.read(appSettingsControllerProvider).soundEnabled) {
+      return Future.value();
+    }
+    return ref.read(soundServiceProvider).play(effect);
   }
 
   void _advanceStep() {

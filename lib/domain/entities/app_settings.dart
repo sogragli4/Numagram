@@ -12,6 +12,7 @@ class AppSettings {
     required this.archiveUnlocksCount,
     required this.selectedThemeId,
     required this.hasSeenTutorial,
+    required this.soundEnabled,
   });
 
   static const defaults = AppSettings(
@@ -26,6 +27,7 @@ class AppSettings {
     archiveUnlocksCount: 0,
     selectedThemeId: 'classic',
     hasSeenTutorial: false,
+    soundEnabled: true,
   );
 
   /// Default daily-reminder time, per the Phase 3 spec.
@@ -68,6 +70,10 @@ class AppSettings {
   /// very first puzzle, and replayable from Settings afterward.
   final bool hasSeenTutorial;
 
+  /// Whether gameplay SFX (fill/mark/mistake/win) play. Independent of
+  /// haptics — a player may want one without the other.
+  final bool soundEnabled;
+
   /// Archive puzzles already opened on [todayKey] — 0 if that's not the
   /// date [archiveUnlocksCount] was tracking (i.e. the day rolled over).
   int archiveUnlocksCountFor(String todayKey) =>
@@ -85,6 +91,7 @@ class AppSettings {
     int? archiveUnlocksCount,
     String? selectedThemeId,
     bool? hasSeenTutorial,
+    bool? soundEnabled,
   }) => AppSettings(
     notificationHour: notificationHour ?? this.notificationHour,
     notificationMinute: notificationMinute ?? this.notificationMinute,
@@ -100,5 +107,6 @@ class AppSettings {
     archiveUnlocksCount: archiveUnlocksCount ?? this.archiveUnlocksCount,
     selectedThemeId: selectedThemeId ?? this.selectedThemeId,
     hasSeenTutorial: hasSeenTutorial ?? this.hasSeenTutorial,
+    soundEnabled: soundEnabled ?? this.soundEnabled,
   );
 }
