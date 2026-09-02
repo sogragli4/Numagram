@@ -2,6 +2,8 @@
   "@@locale": "de",
   "appTitle": "Nonogram Täglich",
   "dailyPuzzleTitle": "Heutiges Rätsel",
+  "gamePickerTitle": "Spiel wählen",
+  "wordGameTitle": "Worträtsel",
   "streakLabel": "{count, plural, =0{Noch keine Serie} one{{count} Tag Serie} other{{count} Tage Serie}}",
   "archiveTitle": "Archiv",
   "freePlayTitle": "Freies Spiel",

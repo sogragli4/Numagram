@@ -226,10 +226,11 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 ### Current phase: Phase 5 complete, plus five post-v1 features, a
 code-review pass, three more locales beyond the locked en/tr, the first
 real-device verification pass, a real board-responsiveness bug fix
-found by it, and Faz 0 + Faz 1 of a second game mode ("Kelime
-Bulmacası" — see directly below). Awaiting founder go-ahead to start
-Faz 2 of the word game, per the same "stop after each phase, wait" rule
-the original project brief itself set.
+found by it, and Faz 0 + Faz 1 + Faz 2 of a second game mode ("Kelime
+Bulmacası" — see directly below, now playable end to end on a real
+device with placeholder content). Awaiting founder go-ahead to start
+Faz 3 of the word game (persistence + real content), per the same "stop
+after each phase, wait" rule the original project brief itself set.
 
 ### New initiative: "Kelime Bulmacası" — a second game mode (Faz 0, added 2026-09-02)
 
@@ -338,13 +339,75 @@ of real logic (letter validation).
   typed letter instead of `toTurkishUpperCase()`.
 
 **Tests**: 174/174 passing (147 + 27 new). `flutter analyze --fatal-infos
---fatal-warnings`: clean. **Faz 2 is the next stop — do not start it
-without an explicit founder go-ahead**, same rule as every phase before
-it. Faz 2's likely scope: flesh out the four remaining Faz 0 usecase
-placeholders against real (in-memory first, Isar-backed once a
-`data/` layer exists for this feature) repository interfaces, and/or
-start the `GamePickerScreen`/`WordBoardScreen` UI against this now-real
-domain layer — whichever the founder wants to see first.
+--fatal-warnings`: clean.
+
+**Faz 2 (this session): the playable UI — done.** Scoped to the
+`GamePickerScreen`/`WordBoardScreen` half of Faz 1's "and/or" (the four
+remaining Faz 0 usecase placeholders — `UnlockNextSection`,
+`ApplyInterestSelection`, `SpendCategoryChange` — stay untouched; they
+need real repositories, which is Faz 3 territory, matching Nonogram's
+own Phase 2 → Phase 3 split).
+
+- **`GamePickerScreen`** (`presentation/gamepicker/`) is now
+  `_HomeRouter`'s post-tutorial destination in `main.dart`, replacing the
+  direct-to-`DailyScreen` jump — two cards, "Nonogram" (→ `DailyScreen`,
+  untouched) and "Kelime Bulmacası" (→ `WordBoardScreen`, new).
+- **`WordBoardScreen`** (`presentation/word/wordboard/`) plays a fixed
+  `buildDemoWordSection()` (`domain/usecases/word/demo_word_section.dart`
+  — explicitly temporary scaffolding, same status Nonogram's own
+  `BoardController`'s inline demo puzzle had in its Phase 2, deliberately
+  avoiding contested Tarih claims since this is placeholder, unreviewed
+  content). `WordBoardController` (new Riverpod controller) +
+  `WordSession` (new domain entity, `domain/entities/word/word_session.dart`
+  — the word-puzzle analog of `GameSession`) drive it through
+  `validateLetter`.
+- **Input mechanic**: tapping a letter box focuses a zero-size,
+  `Opacity: 0` hidden `TextField` that captures one character per
+  `onChanged` call (clearing itself after each) — the visible boxes are
+  pure presentation, reading letters straight from `WordSession` state.
+  A correct letter auto-advances focus to the next empty box in the same
+  clue, then to the next unsolved clue's first box once the current one
+  is fully solved — so after the first tap, a player never needs to tap
+  again to keep going. Wrong-letter flash reuses the exact
+  `AnimationController` + `wrongFlashToken` pattern `BoardScreen` already
+  established, just keyed by `(clueId, position)` instead of `(row,
+  col)`.
+- **New ARB keys** (`gamePickerTitle`, `wordGameTitle`) added to all six
+  locales in the same change, per the no-hardcoded-strings rule; the win
+  dialog reuses the existing `puzzleCompletedTitle`/`continueButtonLabel`
+  rather than adding new keys for it.
+- **Verified twice**: `test/presentation/word/wordboard/word_board_screen_test.dart`
+  drives real taps + real typed input (`tester.enterText` on the hidden
+  field) through all four demo clues end to end, including a wrong letter
+  first that must not stick — passed on the first real attempt, no bugs
+  caught this time. Then verified again on the real connected device
+  (see the section below): the hidden-field-focus mechanic was the one
+  part of this design with real doubt about whether it would behave the
+  same in a widget test as it does with a real Android soft keyboard and
+  IME — confirmed identical on-device (tap → keyboard opens → typed
+  letter fills the box → focus auto-advances), so the widget test's
+  coverage of this mechanic can be trusted for future changes without
+  re-verifying on a device every time.
+- **`test/widget_test.dart`'s first test updated**, not just left broken
+  by the routing change: it now asserts the game picker renders both
+  cards first, taps the Nonogram one, *then* asserts the daily screen's
+  play button — matching what `_HomeRouter` actually does post-tutorial
+  now, instead of asserting a `DailyScreen` that no longer loads first.
+
+**Tests**: 180/180 passing (174 + 6 new — 4 `WordSession` cases, 1 full
+`WordBoardScreen` interaction test, plus `widget_test.dart`'s updated
+first test still counting as one). `flutter analyze --fatal-infos
+--fatal-warnings`: clean.
+
+**Faz 3 is the next stop — do not start it without an explicit founder
+go-ahead.** Likely scope: real repositories for the four remaining Faz 0
+usecases (`UnlockNextSection`, `ApplyInterestSelection`,
+`SpendCategoryChange`, plus wiring `ApplyInterestSelection`'s
+`InterestSurveyScreen`), an Isar-backed `data/` layer for this feature
+(new models, mirroring `PuzzleCompletionModel`/`AppSettingsModel`'s
+pattern), and replacing `buildDemoWordSection()` with real
+track/section content — once that content exists (bölüm 6's AI-draft +
+founder-review pipeline, still not started).
 
 ### First real-device pass: found and fixed a real board-sizing bug
 (added 2026-09-02)

@@ -8,6 +8,14 @@
   "@dailyPuzzleTitle": {
     "description": "Title of the daily puzzle screen."
   },
+  "gamePickerTitle": "Choose a Game",
+  "@gamePickerTitle": {
+    "description": "Title of the game-picker home screen, shown after the tutorial, offering Nonogram and the word puzzle."
+  },
+  "wordGameTitle": "Word Puzzle",
+  "@wordGameTitle": {
+    "description": "Name of the word puzzle game mode, shown on its picker card and its own screens."
+  },
   "streakLabel": "{count, plural, =0{No streak yet} one{{count} day streak} other{{count} day streak}}",
   "@streakLabel": {
     "description": "Current streak counter shown on the daily screen.",

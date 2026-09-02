@@ -2,6 +2,8 @@
   "@@locale": "es",
   "appTitle": "Nonogram Diario",
   "dailyPuzzleTitle": "Rompecabezas de Hoy",
+  "gamePickerTitle": "Elige un Juego",
+  "wordGameTitle": "Rompecabezas de Palabras",
   "streakLabel": "{count, plural, =0{Aún sin racha} one{Racha de {count} día} other{Racha de {count} días}}",
   "archiveTitle": "Archivo",
   "freePlayTitle": "Juego Libre",

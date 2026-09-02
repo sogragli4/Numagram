@@ -2,6 +2,8 @@
   "@@locale": "tr",
   "appTitle": "Günlük Nonogram",
   "dailyPuzzleTitle": "Bugünün Bulmacası",
+  "gamePickerTitle": "Oyun Seç",
+  "wordGameTitle": "Kelime Bulmacası",
   "streakLabel": "{count, plural, =0{Henüz seri yok} other{{count} günlük seri}}",
   "archiveTitle": "Arşiv",
   "freePlayTitle": "Serbest Oyun",
