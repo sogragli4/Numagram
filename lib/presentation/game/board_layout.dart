@@ -17,11 +17,13 @@ class BoardLayout {
     this.cellSize = minTouchTargetSize,
   });
 
-  /// Cells never render smaller than this, in logical pixels — the
-  /// Phase 2 accessibility requirement ("minimum 44pt effective touch
-  /// target after zoom"). Enforced by fixing this as the *unscaled* cell
-  /// size and never letting `InteractiveViewer` zoom out past 1.0, rather
-  /// than by clamping zoomed-out hit-test regions.
+  /// The Phase 2 accessibility requirement ("minimum 44pt effective touch
+  /// target after zoom"), in logical pixels. `BoardScreen._fitBoardLayout`
+  /// uses this as a *cap* on the natural (unzoomed) cell size — a grid
+  /// that comfortably fits the viewport at 44pt/cell renders at exactly
+  /// that, never larger — and as the *floor* a player can always reach by
+  /// pinch-zooming in when the fitted size had to shrink below it to fit
+  /// a larger grid on a small screen (see that method's `maxScale`).
   static const double minTouchTargetSize = 44;
 
   final int puzzleWidth;

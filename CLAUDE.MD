@@ -224,12 +224,110 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 ## PROJECT STATUS (living section — update at the end of every phase)
 
 ### Current phase: Phase 5 complete, plus five post-v1 features, a
-code-review pass, and three more locales beyond the locked en/tr
-(interactive tutorial, progressive difficulty, sound effects,
-achievement badges, streak freeze, the review fixes, and
-German/Spanish/French, below). Six locales total. Awaiting founder
-direction on what's next (real store credentials/signing, a
-device/emulator pass, or further scope beyond v1).
+code-review pass, three more locales beyond the locked en/tr, the first
+real-device verification pass, and a real board-responsiveness bug fix
+found by it (interactive tutorial, progressive difficulty, sound
+effects, achievement badges, streak freeze, the review fixes,
+German/Spanish/French, and the two sections below). Six locales total.
+Awaiting founder direction on what's next (real store credentials/
+signing, or further scope beyond v1) — the "device/emulator pass" gap
+noted in every earlier phase is now closed, see below.
+
+### First real-device pass: found and fixed a real board-sizing bug
+(added 2026-09-02)
+
+Every phase through Phase 5 noted the same environment gap: no Android/
+iOS device or emulator reachable, verification done only via headless
+`flutter_test` golden captures. The founder connected their own Android
+phone (OPPO CPH2109, Android 12) over USB this session — the AVD that
+never booted in earlier phases was never the only option; a real
+physical device works fine once ADB can see it (see "USB debugging
+troubleshooting" below).
+
+**A real, founder-reported bug, confirmed and root-caused on the real
+device**: playing any daily-size (10x10) puzzle required scrolling
+left/right just to reach every cell. `BoardLayout`'s `cellSize` always
+defaulted to the fixed accessibility minimum (44pt,
+`minTouchTargetSize`), with `InteractiveViewer.minScale` pinned at 1 —
+so a 10x10 board (44pt × 10 + gutter ≈ 484pt) simply didn't fit most
+phones' portrait width (~360-412dp), forcing a pan to reach the far
+columns even though the Phase 2 spec's intent was that only 15x15+
+grids would ever need that ("Pinch-to-zoom and pan for 15×15 and larger
+on small screens").
+
+Fixed in `board_screen.dart`: the board area is now wrapped in a
+`LayoutBuilder`, and a new `_fitBoardLayout` computes a `cellSize` that
+fits the *whole* grid inside the actual viewport at scale 1 — capped at
+`BoardLayout.minTouchTargetSize` so a small grid (5x5) never renders
+oversized, and never below a defensive `_minRenderedCellSize` (8, not
+an accessibility target, just avoids a degenerate zero/negative size).
+When the fitted size has to shrink below the true 44pt accessibility
+target (a large grid on a small screen), `InteractiveViewer.maxScale`
+is raised to `max(3, 44/cellSize)` so a player can still pinch in to
+reach a real 44pt touch target — preserving the "minimum 44pt effective
+touch target after zoom" requirement literally, just moving *where*
+that guarantee is met (after a pinch, not at the unzoomed default) for
+grids that don't comfortably fit unzoomed. `BoardLayout.minTouchTargetSize`'s
+doc comment was updated to describe this cap-and-reachable-floor role
+instead of the old fixed-size framing.
+
+**A second, real bug found while chasing this one down — not in the
+app, in the build tooling itself**: after the first code fix, the app
+on the device kept showing the *exact* pre-fix overflow, across several
+rebuild/reinstall/relaunch cycles. Root cause: `flutter build apk
+--debug` on this machine sometimes completes in a few seconds (Gradle
+reports `assembleDebug` as fully up-to-date) *without* actually
+recompiling the changed Dart code into a fresh kernel snapshot — the
+installed APK silently keeps running whatever Dart code was bundled in
+the last real compile. A `print()` statement added directly in the
+suspect code path, that never appeared in `adb logcat` despite the
+screen visibly rendering that code's output, was what proved this
+definitively (a build genuinely using the new code would have logged
+it). `flutter clean && flutter pub get && dart run build_runner build
+--delete-conflicting-outputs && flutter build apk --debug` — a real
+75-110s build every time, never a suspicious <25s one — reliably
+produces a build that actually reflects the current source. **Lesson
+for any future real-device verification session**: treat a
+suspiciously fast `flutter build apk` (well under the ~70s+ a real
+Gradle+Dart build takes on this machine) as a signal the build may be
+stale, not as good news — verify with a full `flutter clean` cycle
+before trusting what's on the device, especially after a rapid
+edit-rebuild-reinstall loop.
+
+**USB debugging troubleshooting, for next time**: the phone (a Samsung
+in this session's first connection attempt, then the OPPO CPH2109 that
+ended up used) didn't show Windows an ADB interface at all at first —
+`adb devices` empty, and Windows' own `Get-PnpDevice` showed it only as
+a generic USB mass-storage device, not offering the RSA-authorization
+prompt. Fixed by changing the phone's own USB connection-mode
+notification (swipe down → tap the USB notification) from "Charge
+only" to "Transfer files / Android Auto" (MTP) — *that* triggers the
+ADB interface Windows/adb can actually see, and only then does the
+"Allow USB debugging" prompt appear. "USB debugging" being toggled on
+in Developer Options alone is not sufficient without also picking that
+USB mode. `adb`/`adb.exe` isn't on this machine's PATH; the working
+binary is at the Android SDK path `flutter doctor -v` reports (this
+session: `D:\Android\Sdk\platform-tools\adb.exe`).
+
+**Also newly confirmed real (not just golden-captured) on-device**:
+German/Spanish/French all render correctly on the daily screen and the
+board screen (see the locale section below) — no missing-key fallback,
+no layout overflow at any of the three, checked via a temporary
+`locale:` override on `MaterialApp` (reverted before every commit, see
+`git diff lib/main.dart` showing no residual change) since the app has
+no in-app language switcher and device system language changes weren't
+reliably scriptable via `adb` on this phone (`WRITE_SECURE_SETTINGS`
+denied to the shell user, standard on an unrooted device) — manually
+switching the phone's own system language remains the option for any
+future locale check that doesn't want to touch `main.dart` at all, at
+the cost of doing it by hand in Settings instead of a quick rebuild
+loop.
+
+**Tests**: 147/147 still passing (no test changes needed — the fix is
+presentation-layer sizing math with no existing unit-level coverage of
+`BoardLayout`'s cellSize selection; verified live on-device instead,
+before/after, both with and without the fix present, as described
+above). `flutter analyze --fatal-infos --fatal-warnings`: clean.
 
 ### Fifth and sixth locales: Spanish and French (added 2026-09-02)
 
@@ -1355,26 +1453,31 @@ not a runtime fallback.
 ### Toolchain on the primary dev machine
 - Flutter 3.35.5 (stable), Dart 3.9.2, Windows 10, no `make` installed.
 - `flutter analyze --fatal-infos --fatal-warnings`: clean.
-- `flutter test`: 136/136 passing (as of the post-v1 streak-freeze
-  feature). Requires `make test-setup` / `./make.ps1 test-setup` once
+- `flutter test`: 147/147 passing (as of the real-device pass / board-
+  sizing fix). Requires `make test-setup` / `./make.ps1 test-setup` once
   first (copies Isar's native library into the project root — see
   Phase 3 deviations).
-- No Android/iOS device or emulator *reliably reachable*, so the *app*
-  itself still can't be run/screenshotted end-to-end — `flutter devices`
-  only shows Windows desktop (no `windows/` platform folder — out of
-  scope, locked targets are Android/iOS) and Chrome/Edge web (doesn't
-  compile — see Phase 2 deviations above). **An Android AVD does exist on
-  this machine** (`flutter emulators` lists `magma_claw_dev`), but every
-  attempt to boot it here — default, `-no-snapshot`, and a fully headless
-  `-gpu swiftshader_indirect -no-window` — got stuck in adb's `offline`
-  state well past a normal cold-boot window (10+ minutes, still climbing
-  CPU usage with no forward progress); never reached a state `flutter
-  run`/screenshot tooling could use. Likely a GPU/display constraint of
-  this specific environment, not a project configuration problem. **A
-  real Android SDK is installed, though** (`flutter doctor` shows a
-  working Android toolchain) — discovered in Phase 5, this makes real
-  `flutter build apk --release` builds possible
-  even without a device to run the result on; see Phase 5 notes above for
-  two real bugs that verification caught.
+- **A real Android device now works** (see "First real-device pass"
+  above) — a physical phone connected over USB (with the right USB
+  connection mode picked on the phone itself, and force-stopped between
+  installs to guarantee a cold start of the latest build) is more
+  reliable than the AVD ever was in this environment. The AVD
+  (`magma_claw_dev`, still listed by `flutter emulators`) is *not*
+  ruled out as a future option, but every earlier boot attempt (default,
+  `-no-snapshot`, fully headless `-gpu swiftshader_indirect -no-window`)
+  got stuck in adb's `offline` state past a normal cold-boot window —
+  likely a GPU/display constraint of this specific environment, not a
+  project configuration problem — so a physical device is the proven
+  path going forward. `flutter devices` also still shows Windows desktop
+  (no `windows/` platform folder — out of scope, locked targets are
+  Android/iOS) and Chrome/Edge web (doesn't compile — see Phase 2
+  deviations above), neither of which run this app.
+- **A real Android SDK is installed** (`flutter doctor` shows a working
+  Android toolchain) — discovered in Phase 5, confirmed working for real
+  `flutter build apk --release`/`--debug` builds and (this session) real
+  device installs via `adb`. **Watch for stale incremental builds** —
+  see the "First real-device pass" section above; when verifying an
+  actual behavior change on-device, prefer a full `flutter clean` cycle
+  over trusting a suspiciously fast `flutter build apk`.
 - Added `meta: ^1.15.0` as a direct dependency in Phase 1, for `@immutable`
   on the domain entities (`PuzzleGrid`, `LineClue`, `GridSize`).

@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nonogram_daily/core/constants.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/core/theme.dart';
 import 'package:nonogram_daily/domain/entities/cell_state.dart';
+import 'package:nonogram_daily/domain/entities/game_session.dart';
 import 'package:nonogram_daily/presentation/game/board_controller.dart';
 import 'package:nonogram_daily/presentation/game/board_layout.dart';
 import 'package:nonogram_daily/presentation/game/board_painter.dart';
@@ -129,12 +132,6 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     });
 
     final appSettings = ref.watch(appSettingsControllerProvider);
-    final layout = BoardLayout(
-      puzzleWidth: session.width,
-      puzzleHeight: session.height,
-      rowClues: session.puzzle.rowClues,
-      columnClues: session.puzzle.columnClues,
-    );
     final palette = appSettings.colorblindPalette
         ? BoardPalette.colorblindSafe
         : BoardPalette.standard;
@@ -196,56 +193,78 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
       body: Column(
         children: [
           Expanded(
-            child: Listener(
-              onPointerDown: _onPointerDown,
-              onPointerMove: _onPointerMove,
-              onPointerUp: _onPointerUp,
-              child: Center(
-                child: InteractiveViewer(
-                  transformationController: _transformationController,
-                  minScale: 1,
-                  maxScale: 3,
-                  boundaryMargin: const EdgeInsets.all(80),
-                  child: GestureDetector(
-                    onTapUp: (details) {
-                      final cell = layout.cellAt(details.localPosition);
-                      if (cell != null) controller.tapCell(cell.$1, cell.$2);
-                    },
-                    onLongPressStart: (details) {
-                      final cell = layout.cellAt(details.localPosition);
-                      if (cell != null) {
-                        controller.startPaintStroke(cell.$1, cell.$2);
-                      }
-                    },
-                    onLongPressMoveUpdate: (details) {
-                      final cell = layout.cellAt(details.localPosition);
-                      if (cell != null) {
-                        controller.continuePaintStroke(cell.$1, cell.$2);
-                      }
-                    },
-                    onLongPressEnd: (_) => controller.endPaintStroke(),
-                    child: RepaintBoundary(
-                      child: AnimatedBuilder(
-                        animation: _flashController,
-                        builder: (context, _) => CustomPaint(
-                          size: layout.totalSize,
-                          painter: BoardPainter(
-                            session: session,
-                            layout: layout,
-                            palette: palette,
-                            gridLineColor: colorScheme.outlineVariant,
-                            textColor: colorScheme.onSurface,
-                            backgroundColor: colorScheme.surface,
-                            wrongFlashRow: state.wrongFlashRow,
-                            wrongFlashCol: state.wrongFlashCol,
-                            wrongFlashOpacity: _flashController.value,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final layout = _fitBoardLayout(
+                  session: session,
+                  availableWidth: constraints.maxWidth,
+                  availableHeight: constraints.maxHeight,
+                );
+                // The board always starts at scale 1 sized to fit the
+                // viewport (see _fitBoardLayout) — maxScale lets a player
+                // pinch in from there up to the true accessibility-minimum
+                // 44pt touch target (BoardLayout.minTouchTargetSize) even
+                // when the fitted cell size had to shrink below it, per
+                // the "minimum 44pt effective touch target after zoom"
+                // requirement.
+                final double maxScale = math.max(
+                  3,
+                  BoardLayout.minTouchTargetSize / layout.cellSize,
+                );
+                return Listener(
+                  onPointerDown: _onPointerDown,
+                  onPointerMove: _onPointerMove,
+                  onPointerUp: _onPointerUp,
+                  child: Center(
+                    child: InteractiveViewer(
+                      transformationController: _transformationController,
+                      minScale: 1,
+                      maxScale: maxScale,
+                      boundaryMargin: const EdgeInsets.all(80),
+                      child: GestureDetector(
+                        onTapUp: (details) {
+                          final cell = layout.cellAt(details.localPosition);
+                          if (cell != null) {
+                            controller.tapCell(cell.$1, cell.$2);
+                          }
+                        },
+                        onLongPressStart: (details) {
+                          final cell = layout.cellAt(details.localPosition);
+                          if (cell != null) {
+                            controller.startPaintStroke(cell.$1, cell.$2);
+                          }
+                        },
+                        onLongPressMoveUpdate: (details) {
+                          final cell = layout.cellAt(details.localPosition);
+                          if (cell != null) {
+                            controller.continuePaintStroke(cell.$1, cell.$2);
+                          }
+                        },
+                        onLongPressEnd: (_) => controller.endPaintStroke(),
+                        child: RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: _flashController,
+                            builder: (context, _) => CustomPaint(
+                              size: layout.totalSize,
+                              painter: BoardPainter(
+                                session: session,
+                                layout: layout,
+                                palette: palette,
+                                gridLineColor: colorScheme.outlineVariant,
+                                textColor: colorScheme.onSurface,
+                                backgroundColor: colorScheme.surface,
+                                wrongFlashRow: state.wrongFlashRow,
+                                wrongFlashCol: state.wrongFlashCol,
+                                wrongFlashOpacity: _flashController.value,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
           SafeArea(
@@ -320,4 +339,50 @@ class _BoardScreenState extends ConsumerState<BoardScreen>
     final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
+
+  /// A cell size that fits [session]'s whole grid inside the available
+  /// viewport at scale 1, capped at [BoardLayout.minTouchTargetSize] so a
+  /// small grid (e.g. 5x5) never renders with oversized cells. Only once
+  /// even the smallest reasonable cell size still can't fit (a large grid
+  /// on a small screen) does the board fall back to the Phase 2 spec's
+  /// pinch-to-zoom-and-pan behavior, rather than every grid size needing
+  /// it regardless of how few cells it has.
+  ///
+  /// The clue gutter's width depends on the clue text alone, not on the
+  /// final cell size (see `BoardLayout._gutterWidthFor`) — a first pass
+  /// with the default (largest) cell size gets a safe, slightly-
+  /// conservative gutter estimate to size the grid against, avoiding a
+  /// circular cellSize-depends-on-gutter-depends-on-cellSize computation.
+  BoardLayout _fitBoardLayout({
+    required GameSession session,
+    required double availableWidth,
+    required double availableHeight,
+  }) {
+    final probe = BoardLayout(
+      puzzleWidth: session.width,
+      puzzleHeight: session.height,
+      rowClues: session.puzzle.rowClues,
+      columnClues: session.puzzle.columnClues,
+    );
+    final fitWidth = (availableWidth - probe.clueGutterWidth) / session.width;
+    final fitHeight =
+        (availableHeight - probe.clueGutterHeight) / session.height;
+    final cellSize = math
+        .min(fitWidth, fitHeight)
+        .clamp(_minRenderedCellSize, BoardLayout.minTouchTargetSize);
+
+    return BoardLayout(
+      puzzleWidth: session.width,
+      puzzleHeight: session.height,
+      rowClues: session.puzzle.rowClues,
+      columnClues: session.puzzle.columnClues,
+      cellSize: cellSize,
+    );
+  }
 }
+
+/// Defensive floor only — keeps the fit computation from ever producing a
+/// zero/negative cell size on a pathological (near-zero) viewport. Not an
+/// accessibility target; [InteractiveViewer]'s pinch-zoom is what actually
+/// gets a player from here up to a real touch-friendly size.
+const _minRenderedCellSize = 8.0;
