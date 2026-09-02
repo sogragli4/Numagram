@@ -1,0 +1,269 @@
+{
+  "@@locale": "en",
+  "appTitle": "Nonogram Daily",
+  "@appTitle": {
+    "description": "The application title shown on the home screen and app switcher."
+  },
+  "dailyPuzzleTitle": "Today's Puzzle",
+  "@dailyPuzzleTitle": {
+    "description": "Title of the daily puzzle screen."
+  },
+  "streakLabel": "{count, plural, =0{No streak yet} one{{count} day streak} other{{count} day streak}}",
+  "@streakLabel": {
+    "description": "Current streak counter shown on the daily screen.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "archiveTitle": "Archive",
+  "@archiveTitle": {
+    "description": "Title of the archive screen listing past puzzles."
+  },
+  "freePlayTitle": "Free Play",
+  "@freePlayTitle": {
+    "description": "Title of the endless free play mode."
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings screen."
+  },
+  "statisticsTitle": "Statistics",
+  "@statisticsTitle": {
+    "description": "Title of the statistics screen."
+  },
+  "heartsRemaining": "{count, plural, =0{No hearts left} one{{count} heart left} other{{count} hearts left}}",
+  "@heartsRemaining": {
+    "description": "Number of mistake hearts remaining during a puzzle.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "puzzleCompletedTitle": "Puzzle Solved!",
+  "@puzzleCompletedTitle": {
+    "description": "Headline shown on the completion sheet."
+  },
+  "watchAdForHint": "Watch an ad for a hint",
+  "@watchAdForHint": {
+    "description": "Button label for the rewarded hint placement."
+  },
+  "watchAdForExtraHeart": "Watch an ad for an extra heart",
+  "@watchAdForExtraHeart": {
+    "description": "Button label for the rewarded extra-heart placement."
+  },
+  "boardModeFill": "Fill",
+  "@boardModeFill": {
+    "description": "Toolbar label for the fill tool on the board screen."
+  },
+  "boardModeMark": "Mark",
+  "@boardModeMark": {
+    "description": "Toolbar label for the mark (X) tool on the board screen."
+  },
+  "undoButtonLabel": "Undo",
+  "@undoButtonLabel": {
+    "description": "Button label to undo the last move."
+  },
+  "colorblindPaletteLabel": "Colourblind-safe palette",
+  "@colorblindPaletteLabel": {
+    "description": "Toggle label for the colourblind-safe board color palette."
+  },
+  "outOfHeartsTitle": "Out of Hearts",
+  "@outOfHeartsTitle": {
+    "description": "Title shown when the player runs out of mistake hearts."
+  },
+  "outOfHeartsMessage": "You've made too many mistakes. Try again?",
+  "@outOfHeartsMessage": {
+    "description": "Body text shown when the player runs out of mistake hearts."
+  },
+  "retryButtonLabel": "Try Again",
+  "@retryButtonLabel": {
+    "description": "Button label to restart the current puzzle after running out of hearts."
+  },
+  "timeLabel": "Time",
+  "@timeLabel": {
+    "description": "Label for the elapsed-time value on the completion sheet."
+  },
+  "continueButtonLabel": "Continue",
+  "@continueButtonLabel": {
+    "description": "Button label to dismiss the completion sheet."
+  },
+  "playTodayButtonLabel": "Play Today's Puzzle",
+  "@playTodayButtonLabel": {
+    "description": "Button label on the daily screen to start today's puzzle."
+  },
+  "todayCompletedLabel": "Solved today — nice work!",
+  "@todayCompletedLabel": {
+    "description": "Shown on the daily screen once today's puzzle is solved."
+  },
+  "longestStreakLabel": "Longest streak: {count}",
+  "@longestStreakLabel": {
+    "description": "Longest-ever streak shown on the daily screen.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "calendarLegendCompleted": "Completed",
+  "@calendarLegendCompleted": {
+    "description": "Legend label for completed days on the archive calendar."
+  },
+  "calendarLegendMissed": "Missed",
+  "@calendarLegendMissed": {
+    "description": "Legend label for missed days on the archive calendar."
+  },
+  "calendarLegendToday": "Today",
+  "@calendarLegendToday": {
+    "description": "Legend label for today on the archive calendar."
+  },
+  "freePlaySizeLabel": "Grid size",
+  "@freePlaySizeLabel": {
+    "description": "Label for the size picker on the free play screen."
+  },
+  "freePlaySizeSmall": "Small",
+  "@freePlaySizeSmall": {
+    "description": "Small grid size preset label on the free play screen."
+  },
+  "freePlaySizeMedium": "Medium",
+  "@freePlaySizeMedium": {
+    "description": "Medium grid size preset label on the free play screen."
+  },
+  "freePlaySizeLarge": "Large",
+  "@freePlaySizeLarge": {
+    "description": "Large grid size preset label on the free play screen."
+  },
+  "playButtonLabel": "Play",
+  "@playButtonLabel": {
+    "description": "Generic button label to start a puzzle."
+  },
+  "difficultyEasyLabel": "Easy",
+  "@difficultyEasyLabel": {
+    "description": "Label for easy-difficulty puzzles."
+  },
+  "difficultyMediumLabel": "Medium",
+  "@difficultyMediumLabel": {
+    "description": "Label for medium-difficulty puzzles."
+  },
+  "difficultyHardLabel": "Hard",
+  "@difficultyHardLabel": {
+    "description": "Label for hard-difficulty puzzles."
+  },
+  "settingsNotificationsSectionTitle": "Daily Reminder",
+  "@settingsNotificationsSectionTitle": {
+    "description": "Section title on the settings screen for the daily reminder notification."
+  },
+  "settingsNotificationsToggleLabel": "Remind me daily",
+  "@settingsNotificationsToggleLabel": {
+    "description": "Toggle label to enable/disable the daily reminder notification."
+  },
+  "settingsNotificationsLockedHint": "Complete your first puzzle to enable reminders",
+  "@settingsNotificationsLockedHint": {
+    "description": "Explains why the daily reminder toggle is disabled before the first puzzle is solved."
+  },
+  "settingsNotificationTimeLabel": "Reminder time",
+  "@settingsNotificationTimeLabel": {
+    "description": "Label for the daily reminder time picker on the settings screen."
+  },
+  "statsTotalSolvedLabel": "Puzzles Solved",
+  "@statsTotalSolvedLabel": {
+    "description": "Label for the total-solved-puzzles stat."
+  },
+  "statsPerfectCountLabel": "Perfect (No Mistakes)",
+  "@statsPerfectCountLabel": {
+    "description": "Label for the perfect (no-mistake) completions stat."
+  },
+  "statsAverageTimeSectionTitle": "Average Time by Size",
+  "@statsAverageTimeSectionTitle": {
+    "description": "Section title for the average-solve-time-by-grid-size breakdown."
+  },
+  "statsEmptyMessage": "Solve your first puzzle to see stats here.",
+  "@statsEmptyMessage": {
+    "description": "Shown on the statistics screen before any puzzle has been solved."
+  },
+  "dailyReminderNotificationTitle": "Your daily puzzle is ready!",
+  "@dailyReminderNotificationTitle": {
+    "description": "Title of the scheduled daily reminder notification."
+  },
+  "dailyReminderNotificationBody": "Keep your streak going — solve today's Nonogram.",
+  "@dailyReminderNotificationBody": {
+    "description": "Body text of the scheduled daily reminder notification."
+  },
+  "archiveLimitReachedMessage": "You've used today's free archive puzzles. Try again tomorrow, or watch an ad to unlock another.",
+  "@archiveLimitReachedMessage": {
+    "description": "Shown when the daily free archive-puzzle limit is reached and no rewarded ad was available/watched."
+  },
+  "attExplainerTitle": "Help keep Nonogram Daily free",
+  "@attExplainerTitle": {
+    "description": "Title of the explainer screen shown before the iOS App Tracking Transparency prompt."
+  },
+  "attExplainerBody": "We use tracking data to show ads that are more relevant to you and to keep this app free. You'll be asked to allow this next — you can always change your mind in Settings.",
+  "@attExplainerBody": {
+    "description": "Body text of the explainer screen shown before the iOS App Tracking Transparency prompt."
+  },
+  "attContinueButtonLabel": "Continue",
+  "@attContinueButtonLabel": {
+    "description": "Button label to proceed from the ATT explainer screen to the system permission prompt."
+  },
+  "themeSectionTitle": "Theme",
+  "@themeSectionTitle": {
+    "description": "Section title on the settings screen for the colour theme picker."
+  },
+  "themeClassicLabel": "Classic",
+  "@themeClassicLabel": {
+    "description": "Name of the default (always unlocked) colour theme."
+  },
+  "themeSunsetLabel": "Sunset",
+  "@themeSunsetLabel": {
+    "description": "Name of the colour theme unlocked at a 7-day streak."
+  },
+  "themeForestLabel": "Forest",
+  "@themeForestLabel": {
+    "description": "Name of the colour theme unlocked at a 30-day streak."
+  },
+  "themeLockedHint": "Unlocks at a {days}-day streak",
+  "@themeLockedHint": {
+    "description": "Shown under a locked theme swatch, explaining how to unlock it.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "notNowButtonLabel": "Not now",
+  "@notNowButtonLabel": {
+    "description": "Button label to dismiss the enable-notifications prompt without acting."
+  },
+  "enableNotificationsPromptBody": "Want a daily reminder so you never miss your streak?",
+  "@enableNotificationsPromptBody": {
+    "description": "Explainer body shown the first time we ask to enable the daily reminder, right after the player's first completed puzzle."
+  },
+  "shareButtonLabel": "Share",
+  "@shareButtonLabel": {
+    "description": "Button label on the completion sheet to share a card of the solved puzzle."
+  },
+  "shareCardAppName": "Nonogram Daily",
+  "@shareCardAppName": {
+    "description": "App name printed on the shareable completion card image."
+  },
+  "shareCardTimeLabel": "Solved in {time}",
+  "@shareCardTimeLabel": {
+    "description": "Elapsed-time line printed on the shareable completion card image.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shareCardMessage": "I solved today's Nonogram Daily puzzle in {time}!",
+  "@shareCardMessage": {
+    "description": "Text shared alongside the completion card image via the OS share sheet.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
+}
