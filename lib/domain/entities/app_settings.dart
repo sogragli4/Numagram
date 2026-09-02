@@ -11,6 +11,7 @@ class AppSettings {
     required this.archiveUnlocksDateKey,
     required this.archiveUnlocksCount,
     required this.selectedThemeId,
+    required this.hasSeenTutorial,
   });
 
   static const defaults = AppSettings(
@@ -24,6 +25,7 @@ class AppSettings {
     archiveUnlocksDateKey: null,
     archiveUnlocksCount: 0,
     selectedThemeId: 'classic',
+    hasSeenTutorial: false,
   );
 
   /// Default daily-reminder time, per the Phase 3 spec.
@@ -61,6 +63,11 @@ class AppSettings {
   /// `core/theme.dart` instead.
   final String selectedThemeId;
 
+  /// Whether the player has completed (or skipped) the interactive
+  /// "how to play" tutorial at least once. Shown automatically before the
+  /// very first puzzle, and replayable from Settings afterward.
+  final bool hasSeenTutorial;
+
   /// Archive puzzles already opened on [todayKey] — 0 if that's not the
   /// date [archiveUnlocksCount] was tracking (i.e. the day rolled over).
   int archiveUnlocksCountFor(String todayKey) =>
@@ -77,6 +84,7 @@ class AppSettings {
     String? Function()? archiveUnlocksDateKey,
     int? archiveUnlocksCount,
     String? selectedThemeId,
+    bool? hasSeenTutorial,
   }) => AppSettings(
     notificationHour: notificationHour ?? this.notificationHour,
     notificationMinute: notificationMinute ?? this.notificationMinute,
@@ -91,5 +99,6 @@ class AppSettings {
         : this.archiveUnlocksDateKey,
     archiveUnlocksCount: archiveUnlocksCount ?? this.archiveUnlocksCount,
     selectedThemeId: selectedThemeId ?? this.selectedThemeId,
+    hasSeenTutorial: hasSeenTutorial ?? this.hasSeenTutorial,
   );
 }

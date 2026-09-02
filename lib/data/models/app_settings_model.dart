@@ -20,7 +20,8 @@ class AppSettingsModel {
     ..lastKnownStreak = entity.lastKnownStreak
     ..archiveUnlocksDateKey = entity.archiveUnlocksDateKey
     ..archiveUnlocksCount = entity.archiveUnlocksCount
-    ..selectedThemeId = entity.selectedThemeId;
+    ..selectedThemeId = entity.selectedThemeId
+    ..hasSeenTutorial = entity.hasSeenTutorial;
 
   static const int fixedId = 0;
 
@@ -38,6 +39,9 @@ class AppSettingsModel {
   // Non-late with a default: an existing local install from before this
   // field existed still reads back a sane value instead of crashing.
   String selectedThemeId = 'classic';
+  // Same reasoning: an existing install predates this field, and should
+  // see the tutorial once rather than crash on read.
+  bool hasSeenTutorial = false;
 
   AppSettings toEntity() => AppSettings(
     notificationHour: notificationHour,
@@ -50,5 +54,6 @@ class AppSettingsModel {
     archiveUnlocksDateKey: archiveUnlocksDateKey,
     archiveUnlocksCount: archiveUnlocksCount,
     selectedThemeId: selectedThemeId,
+    hasSeenTutorial: hasSeenTutorial,
   );
 }

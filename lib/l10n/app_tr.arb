@@ -58,5 +58,16 @@
   "shareButtonLabel": "Paylaş",
   "shareCardAppName": "Günlük Nonogram",
   "shareCardTimeLabel": "{time} sürede çözüldü",
-  "shareCardMessage": "Bugünün Nonogram bulmacasını {time} sürede çözdüm!"
+  "shareCardMessage": "Bugünün Nonogram bulmacasını {time} sürede çözdüm!",
+  "tutorialTitle": "Nasıl Oynanır",
+  "tutorialStepProgress": "Adım {current}/{total}",
+  "tutorialIntroMessage": "Her satır ve sütunun yanındaki sayılar, sırayla kaç hücrenin dolu olması gerektiğini gösterir. Hadi birlikte bir tane çözelim.",
+  "tutorialFillFullRowMessage": "Bu satırın ipucu 5 — satırın tamamı kadar. Yani bu satırdaki tüm hücreler dolu olmalı. Doldurmak için her hücreye dokunun.",
+  "tutorialAutoMarkExplainerMessage": "Diğer sütunların otomatik olarak X ile işaretlendiğini fark ettiniz mi? Bir satır veya sütunun ipucu tamamen karşılandığında, Günlük Nonogram geri kalanını sizin için işaretler.",
+  "tutorialFillFullColumnMessage": "Bu sütunun ipucu da 5, yani aynı mantık geçerli. Sütunun geri kalanını doldurun.",
+  "tutorialFinishedTitle": "Öğrendiniz!",
+  "tutorialFinishedMessage": "İşte nonogram mantığı bu — tahmin gerekmez. Her günlük bulmaca aynı şekilde çalışır.",
+  "tutorialStartPlayingButtonLabel": "Oynamaya başla",
+  "tutorialSkipButtonLabel": "Eğitimi atla",
+  "settingsHowToPlayLabel": "Nasıl Oynanır"
 }

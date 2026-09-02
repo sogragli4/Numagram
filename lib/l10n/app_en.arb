@@ -265,5 +265,57 @@
         "type": "String"
       }
     }
+  },
+  "tutorialTitle": "How to Play",
+  "@tutorialTitle": {
+    "description": "Title of the interactive tutorial screen."
+  },
+  "tutorialStepProgress": "Step {current} of {total}",
+  "@tutorialStepProgress": {
+    "description": "Progress indicator on the tutorial screen.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tutorialIntroMessage": "Numbers next to each row and column tell you how many cells in a row must be filled in, in order. Let's solve one together.",
+  "@tutorialIntroMessage": {
+    "description": "First tutorial step: explains what row/column clues mean."
+  },
+  "tutorialFillFullRowMessage": "This row's clue is 5 — as long as the whole row. That means every cell in this row must be filled. Tap each cell to fill it.",
+  "@tutorialFillFullRowMessage": {
+    "description": "Tutorial step teaching that a clue equal to the line length fills the entire line."
+  },
+  "tutorialAutoMarkExplainerMessage": "Notice the other columns got marked with an X automatically? Once a row or column's clue is fully satisfied, Nonogram Daily marks the rest of it empty for you.",
+  "@tutorialAutoMarkExplainerMessage": {
+    "description": "Tutorial step pointing out the auto-mark behavior that just happened after the previous fill step."
+  },
+  "tutorialFillFullColumnMessage": "This column's clue is also 5, so the same idea applies. Fill in the rest of this column.",
+  "@tutorialFillFullColumnMessage": {
+    "description": "Tutorial step repeating the full-line technique on a column."
+  },
+  "tutorialFinishedTitle": "You've got it!",
+  "@tutorialFinishedTitle": {
+    "description": "Headline shown once the tutorial puzzle is solved."
+  },
+  "tutorialFinishedMessage": "That's nonogram logic — no guessing required. Every daily puzzle works the same way.",
+  "@tutorialFinishedMessage": {
+    "description": "Body text shown once the tutorial puzzle is solved."
+  },
+  "tutorialStartPlayingButtonLabel": "Let's play",
+  "@tutorialStartPlayingButtonLabel": {
+    "description": "Button label to leave the tutorial after finishing it."
+  },
+  "tutorialSkipButtonLabel": "Skip tutorial",
+  "@tutorialSkipButtonLabel": {
+    "description": "Button label to leave the tutorial without finishing it."
+  },
+  "settingsHowToPlayLabel": "How to Play",
+  "@settingsHowToPlayLabel": {
+    "description": "Settings entry that replays the tutorial."
   }
 }

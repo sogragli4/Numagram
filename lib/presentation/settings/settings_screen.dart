@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
 import 'package:nonogram_daily/core/theme.dart';
 import 'package:nonogram_daily/presentation/daily/daily_controller.dart';
+import 'package:nonogram_daily/presentation/onboarding/tutorial_screen.dart';
 import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -67,6 +68,14 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () => controller.selectColorTheme(theme.id),
                   ),
               ],
+            ),
+          ),
+          const Divider(),
+          ListTile(
+            title: Text(l10n.settingsHowToPlayLabel),
+            leading: const Icon(Icons.school_outlined),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TutorialScreen()),
             ),
           ),
           const Divider(),

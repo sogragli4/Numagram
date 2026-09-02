@@ -75,6 +75,12 @@ class AppSettingsController extends _$AppSettingsController {
   Future<void> selectColorTheme(String themeId) =>
       _update(state.copyWith(selectedThemeId: themeId));
 
+  /// Records that the player has finished (or skipped) the tutorial —
+  /// called whether they completed it or tapped "Skip", either way it
+  /// shouldn't show again automatically.
+  Future<void> markTutorialSeen() =>
+      _update(state.copyWith(hasSeenTutorial: true));
+
   Future<void> markFirstPuzzleCompleted() =>
       _update(state.copyWith(hasCompletedFirstPuzzle: true));
 

@@ -12,6 +12,7 @@ import 'package:nonogram_daily/data/models/puzzle_completion_model.dart';
 import 'package:nonogram_daily/data/repositories/settings_repository_impl.dart';
 import 'package:nonogram_daily/presentation/consent/consent_gate.dart';
 import 'package:nonogram_daily/presentation/daily/daily_screen.dart';
+import 'package:nonogram_daily/presentation/onboarding/tutorial_screen.dart';
 import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -103,7 +104,23 @@ class _NonogramDailyAppState extends ConsumerState<NonogramDailyApp>
       darkTheme: AppTheme.dark(seed),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const ConsentGate(child: DailyScreen()),
+      home: const ConsentGate(child: _HomeRouter()),
     );
+  }
+}
+
+/// Shows the tutorial before the player's first-ever puzzle, then
+/// `DailyScreen` from then on. Reactive rather than a one-time
+/// `Navigator` push: once `TutorialScreen` marks itself seen, this
+/// rebuilds and swaps itself out on its own.
+class _HomeRouter extends ConsumerWidget {
+  const _HomeRouter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasSeenTutorial = ref.watch(
+      appSettingsControllerProvider.select((s) => s.hasSeenTutorial),
+    );
+    return hasSeenTutorial ? const DailyScreen() : const TutorialScreen();
   }
 }

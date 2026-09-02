@@ -59,7 +59,13 @@ void main() {
         ProviderScope(
           overrides: [
             isarProvider.overrideWithValue(isar),
-            initialAppSettingsProvider.overrideWithValue(AppSettings.defaults),
+            initialAppSettingsProvider.overrideWithValue(
+              // Explicitly past the tutorial: this test is about the daily
+              // screen, not the (separately tested) tutorial flow — the
+              // real default is `false`, which would otherwise boot into
+              // `TutorialScreen` instead.
+              AppSettings.defaults.copyWith(hasSeenTutorial: true),
+            ),
             consentServiceProvider.overrideWithValue(_FakeConsentService()),
             adServiceProvider.overrideWithValue(_FakeAdService()),
           ],
@@ -87,5 +93,52 @@ void main() {
     expect(find.byType(Scaffold), findsOneWidget);
     // No completions recorded yet, so the "play today" button shows.
     expect(find.byType(FilledButton), findsOneWidget);
+  });
+
+  testWidgets('a first-ever launch boots into the tutorial, not the daily '
+      'screen', (WidgetTester tester) async {
+    late Directory tempDir;
+    late Isar isar;
+
+    await tester.runAsync(() async {
+      tempDir = await Directory.systemTemp.createTemp(
+        'numagram_widget_test_tutorial',
+      );
+      isar = await Isar.open([
+        PuzzleCompletionModelSchema,
+        AppSettingsModelSchema,
+      ], directory: tempDir.path);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            isarProvider.overrideWithValue(isar),
+            // The real default — `hasSeenTutorial: false` — is exactly
+            // what this test wants to exercise.
+            initialAppSettingsProvider.overrideWithValue(AppSettings.defaults),
+            consentServiceProvider.overrideWithValue(_FakeConsentService()),
+            adServiceProvider.overrideWithValue(_FakeAdService()),
+          ],
+          child: const NonogramDailyApp(),
+        ),
+      );
+      await tester.pump();
+    });
+
+    addTearDown(() async {
+      await tester.runAsync(() async {
+        await isar.close(deleteFromDisk: true);
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+    });
+
+    // The tutorial's intro step has no target cells, so its only action
+    // is a "Continue"/`FilledButton` — the daily screen's "play today"
+    // button would also be a `FilledButton`, so this alone wouldn't tell
+    // them apart (see the sibling test above, which caught exactly that
+    // gap). The "Skip tutorial" action is unique to the tutorial screen.
+    expect(find.text('Skip tutorial'), findsOneWidget);
   });
 }

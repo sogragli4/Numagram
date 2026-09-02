@@ -223,9 +223,105 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete. This was the last phase listed in the
-kickoff spec — awaiting founder direction on what's next (real store
-credentials/signing, a device/emulator pass, or scope beyond v1).
+### Current phase: Phase 5 complete, plus one post-v1 feature (interactive
+tutorial, below). Awaiting founder direction on what's next (real store
+credentials/signing, a device/emulator pass, or further scope beyond v1).
+
+### Post-v1: Interactive tutorial (added 2026-09-02)
+
+Not part of the original phased spec — the founder's 2026-09-01 product-direction
+note asked for concrete proposals on "teach the player something" rather than
+deciding unilaterally, and this is that proposal, built once agreed: a
+"How to Play" tutorial shown automatically before a player's first-ever
+puzzle, replayable from Settings.
+
+- **`domain/entities/tutorial_step.dart`** (`TutorialStep`, `TutorialMessage`
+  enum) and **`domain/usecases/tutorial_script.dart`**
+  (`buildTutorialPuzzle`, `buildTutorialScript`) — pure Dart, no Flutter
+  import, matching every other `domain/` file. `buildTutorialPuzzle` is a
+  fixed, hand-authored 5x5 "plus" shape (not randomly generated — the
+  script below references exact cell coordinates, which only makes sense
+  against a puzzle that never changes), verified solvable-without-guessing
+  via `solveFull` in `tutorial_script_test.dart`, the same correctness
+  invariant the real generator relies on.
+- **`presentation/onboarding/`**: `tutorial_controller.dart`
+  (`TutorialController`, a non-family `@riverpod` class) and
+  `tutorial_screen.dart`. Reuses the real gameplay engine — `applyMove`,
+  `GameSession`, and `BoardPainter`/`BoardLayout` from
+  `presentation/game/` — rather than a parallel teaching-only
+  implementation, so what's taught matches how the real board actually
+  behaves.
+- Wired in via `main.dart`'s new `_HomeRouter` (replaces the old
+  `home: ConsentGate(child: DailyScreen())` with
+  `home: ConsentGate(child: _HomeRouter())`): shows `TutorialScreen` until
+  `AppSettings.hasSeenTutorial` (new field, same non-late-with-default
+  Isar migration pattern as `selectedThemeId` in Phase 5) is set, then
+  `DailyScreen` — reactively, not via a one-time `Navigator` push, so
+  finishing/skipping the tutorial swaps the screen on its own. Also
+  reachable any time from `SettingsScreen`'s new "How to Play" entry.
+
+**A real, non-obvious engine interaction found and designed around, not
+worked around**: the tutorial's first draft scripted a third step asking
+the player to manually mark four known-empty cells. It never worked,
+because `applyMove`'s real auto-mark feature (Phase 2 spec: "auto-mark a
+row/column's remaining cells when its clue is satisfied") had already
+marked them — `isRowComplete`/`isColumnComplete` treat an `unknown` cell
+as "matching" a should-be-empty solution cell, so completing this
+puzzle's row/column-of-5 fill step cascades into auto-marking most of the
+grid as a side effect, before the scripted marking step ever ran. An
+end-to-end widget test driving real taps through `TutorialController`
+(not just the domain-level script/puzzle tests, which don't exercise
+`applyMove` and so couldn't have caught this) caught it: the puzzle was
+already fully solved two steps early, so the third step's first tap
+immediately "finished" the tutorial without the player doing anything.
+**Fixed by redesigning the script around the real behavior** rather than
+fighting it: two guided fills (row, then column) plus a no-target
+"notice what just got marked automatically" explainer step in between —
+auto-mark itself becomes the second thing taught, not an obstacle. Net
+result is simpler code too: no free-solve step, no fill/mark tool toggle
+(every guided target is a fill), and no wrong-flash handling (every
+target cell is fill-only and pre-verified solution-correct, so
+`applyMove`'s wrong-fill path is structurally unreachable here) — all
+removed once they turned out to be unnecessary rather than left in as
+unused generality.
+
+**A second, separate testing gotcha found while building the coverage
+above**: `AppSettingsController` is `@riverpod` (autoDispose). The real
+app always has `_HomeRouter` watching it, keeping it alive; a widget test
+that pumps `TutorialScreen` directly (bypassing that router, as isolated
+widget tests naturally do) has nothing watching the provider, so it
+disposes and resets to `initialAppSettingsProvider`'s default the moment
+nothing references it — silently losing `markTutorialSeen()`'s effect
+before the test's own assertion could observe it. Not an app bug (the
+real app's `_HomeRouter` always keeps it alive); fixed in the test with a
+`container.listen(appSettingsControllerProvider, (_, _) {})` to keep it
+alive for the test's duration, the standard Riverpod testing pattern for
+this. Worth remembering for any future test that pumps a screen in
+isolation from its normal router/parent context and then asserts on an
+autoDispose provider's mutated state.
+
+**Tests**: 104/104 passing — 5 new (2 `tutorial_script_test.dart` domain
+tests, 1 end-to-end `tutorial_screen_test.dart` widget test driving real
+taps through the whole script, 2 `widget_test.dart` — one fixed to
+explicitly set `hasSeenTutorial: true` since it was silently passing for
+the wrong reason after this feature shipped [see below], one new,
+confirming a first-ever launch actually shows the tutorial).
+
+**A third real bug, in the pre-existing test suite itself**: adding the
+`_HomeRouter` above meant `test/widget_test.dart`'s existing "app boots
+into the daily screen" test — which used `AppSettings.defaults`
+(`hasSeenTutorial: false`) — started booting into `TutorialScreen`
+instead. It still passed, for the wrong reason: the tutorial's intro step
+also renders exactly one `FilledButton` ("Continue"), coincidentally
+matching that test's only assertion (`find.byType(FilledButton),
+findsOneWidget`). Caught by inspection while wiring up the router, not by
+the test itself. Fixed by having that test explicitly override
+`hasSeenTutorial: true`. Lesson, worth keeping in mind for any future
+UI-shape assertion: a same-shape coincidence between two unrelated
+screens can keep a test green through a real behavior change — prefer
+asserting on something that's actually unique to what you mean to test
+(here, the tutorial's "Skip tutorial" text, added in the sibling test)
+over a widget-type count that another screen could also satisfy.
 
 ### Phase 5 summary (polish and store readiness)
 
@@ -830,16 +926,24 @@ not a runtime fallback.
 ### Toolchain on the primary dev machine
 - Flutter 3.35.5 (stable), Dart 3.9.2, Windows 10, no `make` installed.
 - `flutter analyze --fatal-infos --fatal-warnings`: clean.
-- `flutter test`: 99/99 passing (as of end of Phase 5). Requires
-  `make test-setup` / `./make.ps1 test-setup` once first (copies Isar's
-  native library into the project root — see Phase 3 deviations).
-- No Android/iOS device or emulator attached, so the *app* itself can't be
-  run/screenshotted on a real device — `flutter devices` only shows
-  Windows desktop (no `windows/` platform folder — out of scope, locked
-  targets are Android/iOS) and Chrome/Edge web (doesn't compile — see
-  Phase 2 deviations above). **A real Android SDK is installed, though**
-  (`flutter doctor` shows a working Android toolchain) — discovered in
-  Phase 5, this makes real `flutter build apk --release` builds possible
+- `flutter test`: 104/104 passing (as of the post-v1 tutorial feature).
+  Requires `make test-setup` / `./make.ps1 test-setup` once first (copies
+  Isar's native library into the project root — see Phase 3 deviations).
+- No Android/iOS device or emulator *reliably reachable*, so the *app*
+  itself still can't be run/screenshotted end-to-end — `flutter devices`
+  only shows Windows desktop (no `windows/` platform folder — out of
+  scope, locked targets are Android/iOS) and Chrome/Edge web (doesn't
+  compile — see Phase 2 deviations above). **An Android AVD does exist on
+  this machine** (`flutter emulators` lists `magma_claw_dev`), but every
+  attempt to boot it here — default, `-no-snapshot`, and a fully headless
+  `-gpu swiftshader_indirect -no-window` — got stuck in adb's `offline`
+  state well past a normal cold-boot window (10+ minutes, still climbing
+  CPU usage with no forward progress); never reached a state `flutter
+  run`/screenshot tooling could use. Likely a GPU/display constraint of
+  this specific environment, not a project configuration problem. **A
+  real Android SDK is installed, though** (`flutter doctor` shows a
+  working Android toolchain) — discovered in Phase 5, this makes real
+  `flutter build apk --release` builds possible
   even without a device to run the result on; see Phase 5 notes above for
   two real bugs that verification caught.
 - Added `meta: ^1.15.0` as a direct dependency in Phase 1, for `@immutable`
