@@ -223,11 +223,54 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete, plus five post-v1 features and a
-code-review pass (interactive tutorial, progressive difficulty, sound
-effects, achievement badges, streak freeze, and the fixes below).
-Awaiting founder direction on what's next (real store credentials/
-signing, a device/emulator pass, or further scope beyond v1).
+### Current phase: Phase 5 complete, plus five post-v1 features, a
+code-review pass, and a fourth locale (interactive tutorial, progressive
+difficulty, sound effects, achievement badges, streak freeze, the
+review fixes, and German, below). Awaiting founder direction on what's
+next (real store credentials/signing, a device/emulator pass, or
+further scope beyond v1).
+
+### Fourth locale: German (added 2026-09-02)
+
+Founder-requested (picking from a short list of candidate markets:
+German, Spanish, French). The locked decision only required `en` + `tr`
+for v1 — Phase 5 deliberately left going further as an explicit founder
+call rather than a default (see "Multi-language beyond en/tr" in the
+product-direction notes below) — so this is that call being made.
+
+- **`lib/l10n/app_de.arb`**: every key from `app_en.arb` translated,
+  `@@locale: "de"`. No new ARB keys, no code changes needed beyond the
+  ARB file itself — `l10n.yaml`'s `arb-dir: lib/l10n` means
+  `flutter gen-l10n` picks up any `app_*.arb` file automatically, and
+  `AppLocalizations.supportedLocales` (generated) already includes every
+  locale that has an ARB file, so `MaterialApp`'s
+  `supportedLocales: AppLocalizations.supportedLocales` in `main.dart`
+  needed no edit either.
+- **App/brand name**: translated per-locale rather than kept as a fixed
+  English brand string, matching the precedent `app_tr.arb` already set
+  (`"Nonogram Daily"` → `"Günlük Nonogram"`) — German uses
+  `"Nonogram Täglich"`.
+- **Plurals**: `streakLabel`/`heartsRemaining`/`streakFreezesAvailableLabel`
+  use the same `=0`/`one`/`other` ICU plural shape as `app_en.arb`
+  (German distinguishes singular/plural the same way English does).
+  One deliberate simplification: `streakFreezesAvailableLabel`'s
+  `other` case reuses the singular noun form ("Serienschutz") rather
+  than inventing a plural for the coined compound noun
+  "Serienschutz" — a genuine German plural here would be
+  grammatically awkward, and the surrounding `{count}` number already
+  disambiguates quantity.
+- **`store/listing_de.md`**: added alongside `listing_en.md`/
+  `listing_tr.md`, matching their exact structure (Google Play +
+  App Store sections, character-limit notes) — including translating
+  the store category names themselves (`"Rätsel / Denkspiele"`,
+  `"Spiele → Rätsel"`), following the precedent `listing_tr.md` already
+  set of not leaving category names in English.
+- **Verified**: `flutter gen-l10n` regenerated
+  `lib/core/l10n_gen/app_localizations_de.dart` with no missing-key
+  fallback warnings (every key present), `flutter analyze --fatal-infos
+  --fatal-warnings` clean, `flutter test` 147/147 (unchanged — no test
+  asserts a fixed locale count/list, so a new locale needed no test
+  updates).
 
 ### Code review pass: 10 findings, all fixed (added 2026-09-02)
 
