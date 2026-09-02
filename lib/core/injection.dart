@@ -9,6 +9,7 @@ import 'package:nonogram_daily/data/repositories/streak_repository_impl.dart';
 import 'package:nonogram_daily/domain/repositories/puzzle_repository.dart';
 import 'package:nonogram_daily/domain/repositories/settings_repository.dart';
 import 'package:nonogram_daily/domain/repositories/streak_repository.dart';
+import 'package:nonogram_daily/domain/usecases/apply_streak_freeze.dart';
 import 'package:nonogram_daily/domain/usecases/generate_daily_puzzle.dart';
 import 'package:nonogram_daily/domain/usecases/interstitial_gate.dart';
 import 'package:nonogram_daily/domain/usecases/update_streak.dart';
@@ -62,6 +63,12 @@ GenerateDailyPuzzle generateDailyPuzzle(Ref ref) =>
 @riverpod
 UpdateStreak updateStreak(Ref ref) =>
     UpdateStreak(ref.watch(streakRepositoryProvider));
+
+@riverpod
+ApplyStreakFreeze applyStreakFreeze(Ref ref) => ApplyStreakFreeze(
+  ref.watch(settingsRepositoryProvider),
+  ref.watch(streakRepositoryProvider),
+);
 
 @Riverpod(keepAlive: true)
 NotificationService notificationService(Ref ref) => LocalNotificationService();

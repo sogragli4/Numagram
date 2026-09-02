@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nonogram_daily/core/date_key.dart';
 import 'package:nonogram_daily/core/injection.dart';
 import 'package:nonogram_daily/domain/entities/streak_record.dart';
@@ -16,9 +17,9 @@ Future<StreakRecord> streakForToday(Ref ref) async {
   final completedDates = await ref
       .watch(streakRepositoryProvider)
       .getCompletedDates();
-  final frozenDateKeys = ref
-      .watch(appSettingsControllerProvider)
-      .frozenDateKeys;
+  final frozenDateKeys = ref.watch(
+    appSettingsControllerProvider.select((s) => s.frozenDateKeys),
+  );
   return StreakRecord.compute(
     completedDates: completedDates,
     frozenDates: frozenDateKeys.map(parseDateKey).toSet(),

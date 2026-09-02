@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nonogram_daily/domain/engine/puzzle_generator.dart';
 import 'package:nonogram_daily/domain/engine/stable_hash.dart';
+import 'package:nonogram_daily/domain/usecases/daily_puzzle_plan.dart';
 
 /// A canonical, cross-platform-stable fingerprint of a solved grid's cell
 /// pattern. Deliberately not `PuzzleGrid.hashCode` (built on `Object.hash`,
@@ -82,4 +83,60 @@ void main() {
       });
     },
   );
+
+  group('daily puzzle determinism: pinned dates at their REAL daily size '
+      '(dailySizeForDate)', () {
+    // The group above pins every date's fingerprint at a fixed 10x10 —
+    // useful for catching a generator regression in isolation, but it
+    // doesn't reflect what a real player actually sees on a Saturday
+    // (15x15) or Sunday (5x5): 2025-06-15 is a Sunday, so real players
+    // get a 5x5 there, not the 10x10 the group above generates. This
+    // group pins fingerprints at each date's *actual* `dailySizeForDate`
+    // size, so a regression in the full seed -> real-size -> content
+    // pipeline is caught even when it wouldn't show up at a fixed 10x10.
+    //
+    // Same update rule as above: regenerate deliberately, note it in
+    // CLAUDE.md; an unexpected failure means a past daily puzzle changed
+    // for existing players.
+    const pinnedDailySizeDates =
+        <String, (int year, int month, int day, int expectedFingerprint)>{
+          // Sunday -> 5x5 "light day".
+          '2025-06-15': (2025, 6, 15, -9217946588249954481),
+          // Saturday -> 15x15 "weekend challenge".
+          '2030-12-28': (2030, 12, 28, -7460812552676569386),
+          // Wednesday -> the ordinary 10x10 size, for parity with the
+          // fixed-size group above.
+          '2026-09-01': (2026, 9, 1, 4718093402722289905),
+        };
+
+    for (final entry in pinnedDailySizeDates.entries) {
+      test(entry.key, () {
+        final (year, month, day, expected) = entry.value;
+        final date = DateTime(year, month, day);
+        final size = dailySizeForDate(date);
+        final seed = seedForDate(date);
+        final puzzle = generatePuzzle(
+          seed: seed,
+          width: size.width,
+          height: size.height,
+        );
+        final fingerprint = _fingerprint(
+          size.width,
+          size.height,
+          puzzle.solution.cellAt,
+        );
+        expect(
+          fingerprint,
+          expected,
+          reason:
+              'Grid fingerprint for ${entry.key} at its real daily size '
+              '(${size.width}x${size.height}) changed. If this is an '
+              'intentional generator or dailySizeForDate change, update '
+              'the pinned value and note it in CLAUDE.md — otherwise this '
+              "date's real puzzle just silently changed for every "
+              'existing player.',
+        );
+      });
+    }
+  });
 }

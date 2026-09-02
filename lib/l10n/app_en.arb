@@ -119,6 +119,10 @@
   "@calendarLegendMissed": {
     "description": "Legend label for missed days on the archive calendar."
   },
+  "calendarLegendFrozen": "Streak freeze",
+  "@calendarLegendFrozen": {
+    "description": "Legend label for a day a streak freeze bridged on the archive calendar — not an actual completion, but not counted as missed either."
+  },
   "calendarLegendToday": "Today",
   "@calendarLegendToday": {
     "description": "Legend label for today on the archive calendar."
@@ -146,6 +150,24 @@
   "playButtonLabel": "Play",
   "@playButtonLabel": {
     "description": "Generic button label to start a puzzle."
+  },
+  "freePlaySizeFallbackNotice": "No {width}×{height} puzzle was found in time, so this one is {actualWidth}×{actualHeight} instead.",
+  "@freePlaySizeFallbackNotice": {
+    "description": "Snackbar shown when the free play generator falls back to a smaller size than the player picked.",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      },
+      "actualWidth": {
+        "type": "int"
+      },
+      "actualHeight": {
+        "type": "int"
+      }
+    }
   },
   "difficultyEasyLabel": "Easy",
   "@difficultyEasyLabel": {

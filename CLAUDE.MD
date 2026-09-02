@@ -223,11 +223,130 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete, plus five post-v1 features
-(interactive tutorial, progressive difficulty, sound effects, achievement
-badges, and streak freeze, below). Awaiting founder direction on what's
-next (real store credentials/signing, a device/emulator pass, or further
-scope beyond v1).
+### Current phase: Phase 5 complete, plus five post-v1 features and a
+code-review pass (interactive tutorial, progressive difficulty, sound
+effects, achievement badges, streak freeze, and the fixes below).
+Awaiting founder direction on what's next (real store credentials/
+signing, a device/emulator pass, or further scope beyond v1).
+
+### Code review pass: 10 findings, all fixed (added 2026-09-02)
+
+Ran this session's `/code-review` skill (8 finder angles → verification
+→ 10 CONFIRMED findings) against everything built since Phase 5, then
+fixed all 10 at the founder's request. In severity order:
+
+1. **Archive calendar showed frozen days as "missed."** `CalendarWidget`
+   only knew `completed`/`today`/`playable` — a streak-freeze day (see
+   the streak freeze section below) fell through to "missed" with no way
+   to tell the two apart. Fixed: `CalendarWidget` now takes
+   `frozenDates`, `_DayCell` gets a third `secondaryContainer`-tinted
+   state, and the legend gained a "Streak freeze" entry (new ARB key
+   `calendarLegendFrozen`, both locales).
+2. **Sound service permanently muted on a transient failure.**
+   `AudioPlayersSoundService` cached each effect's `AudioPool` as a
+   `Future` via `putIfAbsent` — but an already-completed-with-error
+   `Future` replays that same error to every future `.then`/`await`
+   forever, per Dart semantics. One bad init (e.g. the audio subsystem
+   not ready yet right after launch) would silence that effect for the
+   rest of the session, no matter how many times the player triggered
+   it. Fixed: the pool future now carries a side-listener that removes
+   itself from the cache on error, so the next call for that effect
+   retries a fresh `AudioPool.createFromAsset` instead of replaying the
+   old failure.
+3. **Streak freeze only ever checked once per process launch.** The
+   check lived inline in `main()`, which only runs on a cold start — but
+   backgrounding (not force-quitting) the app across a midnight boundary
+   is a common mobile pattern, and the process stays alive through that,
+   so a day missed entirely while merely resumed was never caught.
+   Fixed: extracted the check into `domain/usecases/apply_streak_freeze.dart`
+   (`ApplyStreakFreeze`, idempotent by construction — the underlying
+   date-key comparisons already make a repeat call with unchanged inputs
+   a no-op, and it skips the Isar write entirely when nothing changed),
+   called from `main()` at cold start *and* from
+   `_NonogramDailyAppState.didChangeAppLifecycleState` on every
+   `AppLifecycleState.resumed`. The resume path persists through the
+   repository directly (bypassing `AppSettingsController`, which only
+   ever initializes from the fixed `initialAppSettingsProvider` snapshot
+   taken at app start) and then syncs the live provider state via a new
+   `AppSettingsController.adoptExternallyPersisted` method — sets
+   `state` without writing to storage again, since `ApplyStreakFreeze`
+   already did.
+4. **The pinned-date determinism test didn't reflect what players
+   actually see.** `determinism_test.dart`'s regression test generates
+   every pinned date at a fixed 10x10 — but `2025-06-15` is a Sunday, and
+   `dailySizeForDate` gives Sundays a 5x5 "light day" (Saturdays get
+   15x15). A regression only visible at the real size would have passed
+   this test undetected. Fixed by addition, not alteration (to avoid any
+   risk to the existing hash-pinned tests): a new sibling group pins
+   fingerprints for a Sunday, a Saturday, and an ordinary weekday, each
+   generated at its real `dailySizeForDate` size.
+5. **Free Play never checked that the generated puzzle matched the
+   requested size.** `generatePuzzle` can fall back to a smaller size
+   when it can't find a uniquely-solvable puzzle within its attempt
+   budget — most plausible at the new 20x20 tier, which is also where
+   the "Go Big" achievement lives. Handing the player a silently
+   different-sized puzzle would make that achievement look unreachable
+   for no visible reason. Fixed: `FreePlayScreen._play` now compares the
+   generated puzzle's size against the requested preset and shows a
+   `SnackBar` (new ARB key `freePlaySizeFallbackNotice`) when they
+   differ.
+6. **Tutorial's `tapCell` had no already-correct-cell guard.**
+   `BoardController._paintCellIfNeeded` guards against re-painting an
+   already-correct cell, because `applyMove` treats a tap on an
+   already-filled cell as an *undo* — but `TutorialController.tapCell`
+   was missing the same guard, so a double-tap on an already-correctly-
+   filled tutorial target would silently erase the player's own
+   progress. Fixed with the identical guard.
+7. **`streakForToday` watched the whole settings object, not just what
+   it used.** `daily_controller.dart` read
+   `ref.watch(appSettingsControllerProvider).frozenDateKeys` — the whole
+   object — triggering a redundant `StreakRepository.getCompletedDates()`
+   Isar re-fetch on every unrelated settings change (palette, sound
+   toggle, notification time, ...). The obvious fix,
+   `.select((s) => s.frozenDateKeys)`, had previously failed with an
+   `undefined_method` compile error when tried elsewhere in this
+   codebase, which was assumed to mean `.select` doesn't work on a plain
+   `Ref` (as opposed to a `WidgetRef`) inside an `@riverpod` function
+   provider. **That assumption was wrong, and re-testing it here found
+   the actual cause**: `.select` is a `riverpod`/`flutter_riverpod`
+   extension method, and `daily_controller.dart` only imported
+   `riverpod_annotation` (via `core/injection.dart`, which doesn't
+   re-export its own imports — Dart `import` isn't transitive) — so the
+   extension was never in scope, regardless of `Ref` vs. `WidgetRef`.
+   Fixed by adding a direct `import 'package:flutter_riverpod/flutter_riverpod.dart';`.
+   **Lesson for next time this pattern shows up**: an `undefined_method`
+   on `.select` almost certainly means a missing `flutter_riverpod`/
+   `riverpod` import, not that `.select` is unavailable in that context.
+8. **`main()`'s cold-start Isar reads are largely unguarded.** Only the
+   new `ApplyStreakFreeze` call got a `try`/`catch` (matching the
+   Firebase-init pattern already in `main()`) — `Isar.open` and the
+   surrounding settings read/write stay unguarded. Deliberate, not an
+   oversight: the app cannot function at all without Isar (there is no
+   "degraded mode" for local persistence, unlike ads/analytics/consent,
+   which all have one), so wrapping `Isar.open` itself would just trade
+   a clear crash for a silently broken app with no daily puzzle. Revisit
+   only if a real "first-run migration" or "corrupted database" recovery
+   path gets designed — until then this is an accepted, intentional gap.
+9. **`_playSound` was duplicated verbatim** in `BoardController` and
+   `TutorialController` (check `soundEnabled`, then
+   `soundServiceProvider.play(effect)`). Extracted to
+   `presentation/shared/sound_gate.dart`'s `playSoundIfEnabled(Ref ref,
+   SoundEffect effect)` — a top-level function rather than a class,
+   since it's stateless and both call sites already have a `Ref` to
+   pass.
+10. **`_SizePreset`/`isUnlockedAt` in `free_play_screen.dart` was
+    untested, private, widget-local logic** — unlike the equivalent
+    achievement-unlock logic, which lives in a tested domain usecase.
+    Extracted to `domain/entities/free_play_size_preset.dart`
+    (`FreePlaySizePreset`, `freePlaySizePresets`), matching the
+    `GridSize`/`Achievement` pattern, with its own test file
+    (`free_play_size_preset_test.dart`, 6 cases).
+
+**Tests**: 147/147 passing (up from 94/94 at the end of Phase 4 —
+includes every post-v1 feature's own tests plus this pass's additions:
+2 new determinism cases, 2 new streak-freeze-cold-start cases covering
+the resume-triggered re-check, and 6 new `FreePlaySizePreset` cases).
+`flutter analyze --fatal-infos --fatal-warnings`: clean.
 
 ### Post-v1: Streak freeze (added 2026-09-02)
 

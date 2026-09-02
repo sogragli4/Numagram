@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 import 'package:nonogram_daily/core/constants.dart';
-import 'package:nonogram_daily/core/date_key.dart';
 import 'package:nonogram_daily/data/datasources/isar_local_data_source.dart';
 import 'package:nonogram_daily/data/models/app_settings_model.dart';
 import 'package:nonogram_daily/data/models/puzzle_completion_model.dart';
@@ -13,64 +12,23 @@ import 'package:nonogram_daily/domain/entities/app_settings.dart';
 import 'package:nonogram_daily/domain/entities/difficulty.dart';
 import 'package:nonogram_daily/domain/entities/grid_size.dart';
 import 'package:nonogram_daily/domain/entities/puzzle_completion.dart';
-import 'package:nonogram_daily/domain/usecases/streak_freeze.dart';
+import 'package:nonogram_daily/domain/usecases/apply_streak_freeze.dart';
 
-/// Mirrors `main()`'s cold-start streak-freeze sequence exactly (monthly
-/// grant check, then auto-freeze-yesterday check, then one persisted
-/// write) against a real Isar instance — the pure decision functions are
-/// covered by their own unit tests, but the actual field-by-field wiring
-/// through `AppSettings.copyWith` → `AppSettingsModel.fromEntity` →
-/// Isar → back is exactly the class of bug this project's own history
-/// (see CLAUDE.MD) has caught before, and isn't exercised by any other
-/// test — `test/widget_test.dart` pumps the widget tree directly with
-/// `initialAppSettingsProvider` overridden, bypassing `main()` entirely.
-Future<AppSettings> _runColdStartStreakFreezeLogic({
-  required SettingsRepositoryImpl settingsRepository,
-  required StreakRepositoryImpl streakRepository,
-  required DateTime today,
-}) async {
-  final loadedSettings = await settingsRepository.getSettings();
-
-  final todayMonthKey = formatMonthKey(today);
-  var freezesAvailable = loadedSettings.streakFreezesAvailable;
-  var freezeGrantMonthKey = loadedSettings.freezeGrantMonthKey;
-  if (isNewMonthlyFreezeGrantDue(
-    todayMonthKey: todayMonthKey,
-    lastGrantMonthKey: freezeGrantMonthKey,
-  )) {
-    freezesAvailable = (freezesAvailable + StreakFreezeConfig.monthlyGrant)
-        .clamp(0, StreakFreezeConfig.maxFreezesHeld);
-    freezeGrantMonthKey = todayMonthKey;
-  }
-
-  var frozenDateKeys = loadedSettings.frozenDateKeys;
-  final completedDates = await streakRepository.getCompletedDates();
-  final frozenDates = frozenDateKeys.map(parseDateKey).toSet();
-  if (shouldAutoFreezeYesterday(
-    completedDates: completedDates,
-    frozenDates: frozenDates,
-    today: today,
-    freezesAvailable: freezesAvailable,
-  )) {
-    final yesterdayKey = formatDateKey(today.subtract(const Duration(days: 1)));
-    frozenDateKeys = [...frozenDateKeys, yesterdayKey];
-    freezesAvailable -= 1;
-  }
-
-  final updated = loadedSettings.copyWith(
-    streakFreezesAvailable: freezesAvailable,
-    frozenDateKeys: frozenDateKeys,
-    freezeGrantMonthKey: () => freezeGrantMonthKey,
-  );
-  await settingsRepository.updateSettings(updated);
-  return updated;
-}
-
+/// Exercises the real `ApplyStreakFreeze` usecase — the same class
+/// `main()` calls at cold start and `_NonogramDailyAppState` calls again
+/// on every app resume — against a real Isar instance. The pure decision
+/// functions it delegates to are covered by their own unit tests, but the
+/// actual field-by-field wiring through `AppSettings.copyWith` →
+/// `AppSettingsModel.fromEntity` → Isar → back is exactly the class of
+/// bug this project's own history (see CLAUDE.MD) has caught before, and
+/// isn't exercised by any other test — `test/widget_test.dart` pumps the
+/// widget tree directly with `initialAppSettingsProvider` overridden,
+/// bypassing `main()` (and this usecase) entirely.
 void main() {
   late Directory tempDir;
   late Isar isar;
   late SettingsRepositoryImpl settingsRepository;
-  late StreakRepositoryImpl streakRepository;
+  late ApplyStreakFreeze applyStreakFreeze;
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp(
@@ -82,7 +40,10 @@ void main() {
     ], directory: tempDir.path);
     final dataSource = IsarLocalDataSource(isar);
     settingsRepository = SettingsRepositoryImpl(dataSource);
-    streakRepository = StreakRepositoryImpl(dataSource);
+    applyStreakFreeze = ApplyStreakFreeze(
+      settingsRepository,
+      StreakRepositoryImpl(dataSource),
+    );
   });
 
   tearDown(() async {
@@ -95,9 +56,10 @@ void main() {
   test(
     'a real missed-yesterday gap gets frozen and persisted through Isar',
     () async {
+      final dataSource = IsarLocalDataSource(isar);
       // Completed the day before yesterday, nothing since — a real gap
       // a freeze should bridge.
-      await streakRepository.recordCompletion(
+      await StreakRepositoryImpl(dataSource).recordCompletion(
         PuzzleCompletion(
           date: DateTime(2026, 9, 8),
           size: const GridSize(10, 10),
@@ -108,9 +70,9 @@ void main() {
         ),
       );
 
-      final result = await _runColdStartStreakFreezeLogic(
-        settingsRepository: settingsRepository,
-        streakRepository: streakRepository,
+      final loadedSettings = await settingsRepository.getSettings();
+      final result = await applyStreakFreeze.call(
+        currentSettings: loadedSettings,
         today: DateTime(2026, 9, 10),
       );
 
@@ -121,7 +83,7 @@ void main() {
       expect(result.streakFreezesAvailable, 1);
 
       // Re-read from Isar directly — confirms the write actually landed,
-      // not just the in-memory `updated` value this function returned.
+      // not just the in-memory `result` this call returned.
       final rereadSettings = await settingsRepository.getSettings();
       expect(rereadSettings.frozenDateKeys, contains('2026-09-09'));
       expect(rereadSettings.streakFreezesAvailable, 1);
@@ -129,9 +91,9 @@ void main() {
   );
 
   test('a genuine first-ever monthly grant is persisted', () async {
-    final result = await _runColdStartStreakFreezeLogic(
-      settingsRepository: settingsRepository,
-      streakRepository: streakRepository,
+    final loadedSettings = await settingsRepository.getSettings();
+    final result = await applyStreakFreeze.call(
+      currentSettings: loadedSettings,
       today: DateTime(2026, 9, 10),
     );
 
@@ -141,7 +103,8 @@ void main() {
   });
 
   test('no gap to freeze leaves frozenDateKeys empty', () async {
-    await streakRepository.recordCompletion(
+    final dataSource = IsarLocalDataSource(isar);
+    await StreakRepositoryImpl(dataSource).recordCompletion(
       PuzzleCompletion(
         date: DateTime(2026, 9, 9),
         size: const GridSize(10, 10),
@@ -152,9 +115,9 @@ void main() {
       ),
     );
 
-    final result = await _runColdStartStreakFreezeLogic(
-      settingsRepository: settingsRepository,
-      streakRepository: streakRepository,
+    final loadedSettings = await settingsRepository.getSettings();
+    final result = await applyStreakFreeze.call(
+      currentSettings: loadedSettings,
       today: DateTime(2026, 9, 10),
     );
 
@@ -165,19 +128,83 @@ void main() {
     // Seed settings as if the player already holds the max, with this
     // month's grant already claimed — a second run in the same month
     // (e.g. reopening the app twice) must not grant again.
-    await settingsRepository.updateSettings(
-      AppSettings.defaults.copyWith(
-        streakFreezesAvailable: StreakFreezeConfig.maxFreezesHeld,
-        freezeGrantMonthKey: () => '2026-09',
-      ),
+    final seeded = AppSettings.defaults.copyWith(
+      streakFreezesAvailable: StreakFreezeConfig.maxFreezesHeld,
+      freezeGrantMonthKey: () => '2026-09',
     );
+    await settingsRepository.updateSettings(seeded);
 
-    final result = await _runColdStartStreakFreezeLogic(
-      settingsRepository: settingsRepository,
-      streakRepository: streakRepository,
+    final result = await applyStreakFreeze.call(
+      currentSettings: seeded,
       today: DateTime(2026, 9, 10),
     );
 
     expect(result.streakFreezesAvailable, StreakFreezeConfig.maxFreezesHeld);
+  });
+
+  test('calling it twice in a row (cold start, then an app-resume re-check) '
+      'is idempotent', () async {
+    // Mirrors main.dart's cold start immediately followed by
+    // _NonogramDailyAppState re-checking on the very next app resume —
+    // the second call must not double-grant or double-freeze.
+    final dataSource = IsarLocalDataSource(isar);
+    await StreakRepositoryImpl(dataSource).recordCompletion(
+      PuzzleCompletion(
+        date: DateTime(2026, 9, 8),
+        size: const GridSize(10, 10),
+        difficulty: Difficulty.medium,
+        elapsedSeconds: 120,
+        mistakeCount: 0,
+        completedAt: DateTime(2026, 9, 8, 12),
+      ),
+    );
+
+    final loadedSettings = await settingsRepository.getSettings();
+    final first = await applyStreakFreeze.call(
+      currentSettings: loadedSettings,
+      today: DateTime(2026, 9, 10),
+    );
+    final second = await applyStreakFreeze.call(
+      currentSettings: first,
+      today: DateTime(2026, 9, 10),
+    );
+
+    expect(second.frozenDateKeys, first.frozenDateKeys);
+    expect(second.streakFreezesAvailable, first.streakFreezesAvailable);
+    expect(second.freezeGrantMonthKey, first.freezeGrantMonthKey);
+  });
+
+  test('a day missed entirely while the app was only resumed (no relaunch) '
+      'still gets frozen on the next resume check', () async {
+    // Simulates main.dart's cold start on day N (nothing to freeze
+    // yet), then the app staying backgrounded-but-alive across
+    // midnight, then a resume re-check on day N+2 discovering
+    // yesterday (N+1) needs freezing — exactly the gap this usecase
+    // exists to close, now that it isn't only ever called once.
+    final dataSource = IsarLocalDataSource(isar);
+    await StreakRepositoryImpl(dataSource).recordCompletion(
+      PuzzleCompletion(
+        date: DateTime(2026, 9, 8),
+        size: const GridSize(10, 10),
+        difficulty: Difficulty.medium,
+        elapsedSeconds: 120,
+        mistakeCount: 0,
+        completedAt: DateTime(2026, 9, 8, 12),
+      ),
+    );
+
+    final loadedSettings = await settingsRepository.getSettings();
+    final coldStart = await applyStreakFreeze.call(
+      currentSettings: loadedSettings,
+      today: DateTime(2026, 9, 9),
+    );
+    expect(coldStart.frozenDateKeys, isEmpty);
+
+    final resumeCheck = await applyStreakFreeze.call(
+      currentSettings: coldStart,
+      today: DateTime(2026, 9, 10),
+    );
+
+    expect(resumeCheck.frozenDateKeys, contains('2026-09-09'));
   });
 }

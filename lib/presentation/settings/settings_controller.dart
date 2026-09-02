@@ -102,6 +102,18 @@ class AppSettingsController extends _$AppSettingsController {
     ),
   );
 
+  /// Adopts settings that were already persisted elsewhere — e.g.
+  /// `ApplyStreakFreeze`, called directly against the repository rather
+  /// than through this controller, such as from `main.dart`'s app-resume
+  /// handler — into this controller's live state, without writing to
+  /// storage again (the caller already did that). A method, not a
+  /// setter: a setter here would just trade this lint for
+  /// `avoid_setters_without_getters`.
+  // ignore: use_setters_to_change_properties
+  void adoptExternallyPersisted(AppSettings settings) {
+    state = settings;
+  }
+
   Future<void> _update(AppSettings settings) async {
     state = settings;
     await ref.read(settingsRepositoryProvider).updateSettings(settings);

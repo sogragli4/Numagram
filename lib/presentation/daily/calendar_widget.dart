@@ -8,6 +8,7 @@ class CalendarWidget extends StatelessWidget {
   const CalendarWidget({
     required this.month,
     required this.completedDates,
+    required this.frozenDates,
     required this.today,
     required this.onDayTap,
     super.key,
@@ -15,6 +16,11 @@ class CalendarWidget extends StatelessWidget {
 
   final DateTime month;
   final Set<DateTime> completedDates;
+
+  /// Dates a streak freeze bridged (see `StreakRecord.frozenDates`) — not
+  /// actual completions, but shouldn't read as "missed" either: the
+  /// streak counted them as continuous, so the calendar should say so.
+  final Set<DateTime> frozenDates;
   final DateTime today;
   final void Function(DateTime date) onDayTap;
 
@@ -46,6 +52,9 @@ class CalendarWidget extends StatelessWidget {
                 isCompleted: completedDates.contains(
                   DateTime(month.year, month.month, day),
                 ),
+                isFrozen: frozenDates.contains(
+                  DateTime(month.year, month.month, day),
+                ),
                 isPlayable: !DateTime(
                   month.year,
                   month.month,
@@ -65,6 +74,10 @@ class CalendarWidget extends StatelessWidget {
             ),
             _Legend(color: colorScheme.error, label: l10n.calendarLegendMissed),
             _Legend(
+              color: colorScheme.secondary,
+              label: l10n.calendarLegendFrozen,
+            ),
+            _Legend(
               color: colorScheme.tertiary,
               label: l10n.calendarLegendToday,
             ),
@@ -80,6 +93,7 @@ class _DayCell extends StatelessWidget {
     required this.date,
     required this.isToday,
     required this.isCompleted,
+    required this.isFrozen,
     required this.isPlayable,
     required this.onTap,
   });
@@ -87,6 +101,7 @@ class _DayCell extends StatelessWidget {
   final DateTime date;
   final bool isToday;
   final bool isCompleted;
+  final bool isFrozen;
   final bool isPlayable;
   final void Function(DateTime date) onTap;
 
@@ -98,6 +113,9 @@ class _DayCell extends StatelessWidget {
     if (isCompleted) {
       background = colorScheme.primary;
       foreground = colorScheme.onPrimary;
+    } else if (isFrozen) {
+      background = colorScheme.secondaryContainer;
+      foreground = colorScheme.onSecondaryContainer;
     } else if (!isPlayable) {
       background = Colors.transparent;
       foreground = colorScheme.onSurface.withValues(alpha: 0.3);

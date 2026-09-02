@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:nonogram_daily/core/injection.dart';
 import 'package:nonogram_daily/domain/entities/game_session.dart';
 import 'package:nonogram_daily/domain/entities/tutorial_step.dart';
 import 'package:nonogram_daily/domain/usecases/tutorial_script.dart';
 import 'package:nonogram_daily/domain/usecases/validate_move.dart';
-import 'package:nonogram_daily/presentation/settings/settings_controller.dart';
+import 'package:nonogram_daily/presentation/shared/sound_gate.dart';
 import 'package:nonogram_daily/services/sound/sound_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -82,6 +81,13 @@ class TutorialController extends _$TutorialController {
     final step = state.currentStep;
     if (!step.targetCells.contains((row, col))) return;
 
+    // A cell already at the step's required state (e.g. a double-tap on
+    // an already-correctly-filled target) must be a no-op — `applyMove`
+    // treats a tap on an already-filled cell as an *undo*, which would
+    // silently erase progress a player just made. Same guard
+    // `BoardController._paintCellIfNeeded` uses for the same reason.
+    if (state.session.stateAt(row, col) == step.requiredIntent) return;
+
     final result = applyMove(
       session: state.session,
       row: row,
@@ -90,19 +96,12 @@ class TutorialController extends _$TutorialController {
     );
     state = state.copyWith(session: result.session);
     unawaited(HapticFeedback.lightImpact());
-    unawaited(_playSound(SoundEffect.fill));
+    unawaited(playSoundIfEnabled(ref, SoundEffect.fill));
 
     final allTargetsMet = step.targetCells.every(
       (cell) => state.session.stateAt(cell.$1, cell.$2) == step.requiredIntent,
     );
     if (allTargetsMet) _advanceStep();
-  }
-
-  Future<void> _playSound(SoundEffect effect) {
-    if (!ref.read(appSettingsControllerProvider).soundEnabled) {
-      return Future.value();
-    }
-    return ref.read(soundServiceProvider).play(effect);
   }
 
   void _advanceStep() {

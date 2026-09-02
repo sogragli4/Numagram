@@ -141,6 +141,7 @@ class _ArchiveScreenState extends ConsumerState<ArchiveScreen> {
                     CalendarWidget(
                       month: _visibleMonth,
                       completedDates: streak.completedDates,
+                      frozenDates: streak.frozenDates,
                       today: DateTime.now(),
                       onDayTap: _openDate,
                     ),

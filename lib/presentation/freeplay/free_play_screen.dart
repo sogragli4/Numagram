@@ -1,30 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nonogram_daily/core/constants.dart';
 import 'package:nonogram_daily/core/injection.dart';
 import 'package:nonogram_daily/core/l10n_gen/app_localizations.dart';
+import 'package:nonogram_daily/domain/entities/free_play_size_preset.dart';
 import 'package:nonogram_daily/presentation/daily/daily_controller.dart';
 import 'package:nonogram_daily/presentation/game/board_controller.dart';
 import 'package:nonogram_daily/presentation/game/board_screen.dart';
-
-class _SizePreset {
-  const _SizePreset(this.width, this.height, {this.requiredStreak = 0});
-  final int width;
-  final int height;
-
-  /// Longest-ever streak needed to play this size. 0 means always
-  /// available.
-  final int requiredStreak;
-
-  bool isUnlockedAt(int longestStreak) => longestStreak >= requiredStreak;
-}
-
-const _presets = [
-  _SizePreset(5, 5),
-  _SizePreset(10, 10),
-  _SizePreset(15, 15),
-  _SizePreset(20, 20, requiredStreak: FreePlaySizeUnlocks.extraLargeStreakDays),
-];
 
 /// Pick a grid size, then play an endless, randomly-seeded puzzle at that
 /// size. True difficulty (easy/medium/hard) is a property of the specific
@@ -32,9 +13,9 @@ const _presets = [
 /// the input, difficulty is shown once the puzzle is generated.
 ///
 /// The largest size is a streak-milestone unlock (see
-/// `FreePlaySizeUnlocks`) — personal progression, unlike the daily
-/// puzzle's day-of-week size rhythm (`dailySizeForDate`), which stays the
-/// same for every player on a given date.
+/// `FreePlaySizePreset`/`FreePlaySizeUnlocks`) — personal progression,
+/// unlike the daily puzzle's day-of-week size rhythm (`dailySizeForDate`),
+/// which stays the same for every player on a given date.
 class FreePlayScreen extends ConsumerStatefulWidget {
   const FreePlayScreen({super.key});
 
@@ -48,12 +29,37 @@ class _FreePlayScreenState extends ConsumerState<FreePlayScreen> {
 
   Future<void> _play() async {
     setState(() => _generating = true);
-    final preset = _presets[_selectedIndex];
+    final preset = freePlaySizePresets[_selectedIndex];
     final puzzle = await ref
         .read(puzzleRepositoryProvider)
         .getFreePlayPuzzle(width: preset.width, height: preset.height);
     if (!mounted) return;
     setState(() => _generating = false);
+
+    // The generator can fall back to a smaller size when it can't find a
+    // uniquely-solvable puzzle at the requested one within its attempt
+    // budget (see `generatePuzzle`) — most likely at the 20x20 tier, where
+    // the "Go Big" achievement lives. Silently handing the player a
+    // different-sized puzzle than the one they picked, with no
+    // indication, would make that achievement look unreachable for no
+    // visible reason.
+    if (puzzle.size.width != preset.width ||
+        puzzle.size.height != preset.height) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.freePlaySizeFallbackNotice(
+              preset.width,
+              preset.height,
+              puzzle.size.width,
+              puzzle.size.height,
+            ),
+          ),
+        ),
+      );
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BoardScreen(args: BoardArgs.freePlay(puzzle: puzzle)),
@@ -87,16 +93,15 @@ class _FreePlayScreenState extends ConsumerState<FreePlayScreen> {
             const SizedBox(height: 12),
             SegmentedButton<int>(
               segments: [
-                for (var i = 0; i < _presets.length; i++)
+                for (final (i, preset) in freePlaySizePresets.indexed)
                   ButtonSegment(
                     value: i,
-                    enabled: _presets[i].isUnlockedAt(longestStreak),
-                    icon: _presets[i].isUnlockedAt(longestStreak)
+                    enabled: preset.isUnlockedAt(longestStreak),
+                    icon: preset.isUnlockedAt(longestStreak)
                         ? null
                         : const Icon(Icons.lock, size: 16),
                     label: Text(
-                      '${labels[i]} '
-                      '(${_presets[i].width}×${_presets[i].height})',
+                      '${labels[i]} (${preset.width}×${preset.height})',
                     ),
                   ),
               ],
@@ -104,10 +109,10 @@ class _FreePlayScreenState extends ConsumerState<FreePlayScreen> {
               onSelectionChanged: (selection) =>
                   setState(() => _selectedIndex = selection.first),
             ),
-            if (!_presets.last.isUnlockedAt(longestStreak)) ...[
+            if (!freePlaySizePresets.last.isUnlockedAt(longestStreak)) ...[
               const SizedBox(height: 8),
               Text(
-                l10n.themeLockedHint(_presets.last.requiredStreak),
+                l10n.themeLockedHint(freePlaySizePresets.last.requiredStreak),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
