@@ -41,6 +41,22 @@
   "@wordClearEntryLabel": {
     "description": "Button that clears the currently active crossword entry's typed letters."
   },
+  "wordHomeTagline": "A new crossword every day",
+  "@wordHomeTagline": {
+    "description": "Tagline shown under the word game's title on its home screen."
+  },
+  "wordHomeNewPuzzleButtonLabel": "New Puzzle",
+  "@wordHomeNewPuzzleButtonLabel": {
+    "description": "Button label on the word game home screen to start today's crossword."
+  },
+  "wordHomeComingSoonMessage": "Coming soon",
+  "@wordHomeComingSoonMessage": {
+    "description": "Snackbar shown when tapping a word game home screen button for a feature not built yet (archive, achievements)."
+  },
+  "wordHomeHowToPlayBody": "Tap a clue, or a cell in the grid, to select an entry, then type letters on the keyboard to fill it in. Crossing entries share letters, so a correct guess in one can help you with another.",
+  "@wordHomeHowToPlayBody": {
+    "description": "Body text of the word game's simple how-to-play dialog, shown from its home screen."
+  },
   "streakLabel": "{count, plural, =0{No streak yet} one{{count} day streak} other{{count} day streak}}",
   "@streakLabel": {
     "description": "Current streak counter shown on the daily screen.",

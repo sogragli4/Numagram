@@ -229,10 +229,86 @@ real-device verification pass, a real board-responsiveness bug fix
 found by it, and Faz 0 + Faz 1 + Faz 2 of a second game mode ("Kelime
 Bulmacası" — see directly below), now a real intersecting crossword
 (not the original clue-list mechanic — see the pivot note) with its own
-design system, playable end to end and verified on a real device.
-Awaiting founder go-ahead to start Faz 3 of the word game (persistence
-+ real content), per the same "stop after each phase, wait" rule the
-original project brief itself set.
+design system and its own branded home screen, playable end to end and
+verified on a real device. Awaiting founder go-ahead to start Faz 3 of
+the word game (persistence + real content), per the same "stop after
+each phase, wait" rule the original project brief itself set.
+
+### Kelime Bulmacası home screen (added 2026-09-02)
+
+The founder's second reference mockup ("ana menü") asked for a branded
+home screen for the word game — the piece that was missing between
+`GamePickerScreen` (picks a game) and `WordBoardScreen` (plays one),
+mirroring the role `DailyScreen` already plays for Nonogram.
+`lib/presentation/word/home/word_home_screen.dart` (`WordHomeScreen`):
+a masthead title + tagline, a calendar icon (archive) and settings icon
+(opens the existing shared `SettingsScreen` — reused as-is, not
+duplicated, since theme/sound/notification settings are app-wide, not
+per-game) in the top corner, and four stacked `AppButton`s. Background
+is `WordMastheadPainter`, a `CustomPainter` gradient + faint
+crossword-grid texture built from the brand palette itself — no
+photographic asset exists in this environment (same gap as the app
+icon/splash/sound placeholders), and a palette-derived texture will
+never look out of place once real photography replaces it, unlike an
+unrelated stock image would.
+
+**Two mockup elements were deliberately changed, not carried over
+as-is** — both flagged to the founder and resolved via explicit
+decisions before building, not assumed:
+
+- **"Liderlik Tablosu" (leaderboard) → dropped, per the founder's own
+  choice.** A real leaderboard needs a backend to compare players
+  against each other, which conflicts directly with the locked "no
+  backend, no server, no login" architecture decision. The founder
+  chose to fold its intent into "Başarılarım" (personal stats/
+  achievements) instead — since the mockup already had a separate
+  achievements button, keeping both would have meant two buttons
+  pointing at the same eventual screen, so the menu now has four
+  buttons, not five.
+- **"Mağaza" (store) bottom-nav tab → dropped outright, per the
+  founder's own choice.** No in-app purchases exist anywhere in this
+  project; monetization is locked as ad-only (rewarded + interstitial).
+  A store tab with nothing to sell would either sit empty or invite
+  scope creep toward IAP that was never asked for.
+
+**"Bulmacalar" (archive) and "Başarılarım" (achievements) are visible
+and tappable but not real features yet** — both need persisted
+word-game completion history, and that's Faz 3, not started (see
+below). Rather than hide them or fake data, tapping either shows a
+clear "Yakında geliyor" snackbar (`wordHomeComingSoonMessage`) —
+consistent with this project's standing rule of flagging an unfinished
+gap rather than papering over it. "Nasıl Oynanır" opens a simple
+`AlertDialog` with brief written instructions, not a full interactive
+tutorial like Nonogram's `TutorialScreen` — building a second guided,
+scripted tutorial experience for a demo puzzle that Faz 3 will replace
+anyway isn't a good use of build effort yet; revisit once real content
+exists.
+
+New ARB keys, all six locales: `wordHomeTagline`,
+`wordHomeNewPuzzleButtonLabel`, `wordHomeComingSoonMessage`,
+`wordHomeHowToPlayBody`. Everything else on the screen reuses existing
+keys (`archiveTitle`, `achievementsSectionTitle`, `settingsTitle`,
+`settingsHowToPlayLabel`, `tutorialTitle`, `continueButtonLabel`) —
+each was already generic enough for this new context, so no near-duplicate
+key was added.
+
+**Tests**: no new dedicated test file — the screen is a straightforward
+composition of already-tested components (`AppButton`, `AppCard`-free
+here since none of its content needed a card surface, `SettingsScreen`,
+`WordBoardScreen`) with no new domain logic of its own to unit-test;
+verified instead by driving every button on the real device (see
+below), matching how `GamePickerScreen` itself was verified. Full suite
+still 179/179 passing, `flutter analyze --fatal-infos --fatal-warnings`
+clean.
+
+**Visual verification**: real device, full clean-rebuild cycle. Every
+interactive element was actually tapped and screenshotted: the masthead
+and background texture render correctly; "Yeni Bulmaca" opens the real
+crossword board (confirming the keyboard-overflow fix from the pivot
+still holds, unaffected by this change); "Arşiv"/"Başarılarım" show the
+coming-soon snackbar; "Nasıl Oynanır" opens its dialog with the correct
+Turkish instructions text; the settings icon opens the real, shared
+`SettingsScreen`. No overflow or layout issues found this time.
 
 ### Kelime Bulmacası pivot: real crossword grid, not a clue list (added 2026-09-02)
 
