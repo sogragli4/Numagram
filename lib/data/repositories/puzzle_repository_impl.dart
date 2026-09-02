@@ -2,13 +2,7 @@ import 'package:nonogram_daily/data/datasources/puzzle_generator_data_source.dar
 import 'package:nonogram_daily/domain/engine/stable_hash.dart';
 import 'package:nonogram_daily/domain/entities/puzzle.dart';
 import 'package:nonogram_daily/domain/repositories/puzzle_repository.dart';
-
-/// The daily puzzle is always this size for v1 — chosen because it's the
-/// size the Phase 1 difficulty scorer was calibrated against ("10x10
-/// lands in medium"). Varying size by day/streak milestone is a
-/// reasonable Phase 5 progression idea, not decided here.
-const dailyPuzzleWidth = 10;
-const dailyPuzzleHeight = 10;
+import 'package:nonogram_daily/domain/usecases/daily_puzzle_plan.dart';
 
 class PuzzleRepositoryImpl implements PuzzleRepository {
   const PuzzleRepositoryImpl(this._generator);
@@ -17,10 +11,11 @@ class PuzzleRepositoryImpl implements PuzzleRepository {
 
   @override
   Future<Puzzle> getDailyPuzzle(DateTime date) {
+    final size = dailySizeForDate(date);
     return _generator.generate(
       seed: seedForDate(date),
-      width: dailyPuzzleWidth,
-      height: dailyPuzzleHeight,
+      width: size.width,
+      height: size.height,
     );
   }
 

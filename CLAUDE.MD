@@ -223,9 +223,59 @@ Begin with Phase 0. Show me the folder tree and the proposed `CLAUDE.md` content
 
 ## PROJECT STATUS (living section — update at the end of every phase)
 
-### Current phase: Phase 5 complete, plus one post-v1 feature (interactive
-tutorial, below). Awaiting founder direction on what's next (real store
-credentials/signing, a device/emulator pass, or further scope beyond v1).
+### Current phase: Phase 5 complete, plus two post-v1 features (interactive
+tutorial and progressive difficulty, below). Awaiting founder direction on
+what's next (real store credentials/signing, a device/emulator pass, or
+further scope beyond v1).
+
+### Post-v1: Progressive difficulty (added 2026-09-02)
+
+The other half of the same founder note the tutorial addresses: "archive +
+free play + streak milestones should introduce new grid sizes ... over
+time rather than repeating the same shape." Two separate mechanisms, kept
+separate deliberately:
+
+- **Daily puzzle: a day-of-week size rhythm, not a per-player one.**
+  `domain/usecases/daily_puzzle_plan.dart`'s `dailySizeForDate` — pure
+  Dart, a function of `DateTime.weekday` only — replaces the old fixed
+  10x10-always daily size. Saturday is now a "weekend challenge" (15x15),
+  Sunday a "light day" (5x5), Monday–Friday stay the standard 10x10 (the
+  size the Phase 1 difficulty scorer was calibrated against — unchanged
+  for most of the week). `PuzzleRepositoryImpl.getDailyPuzzle` calls it
+  instead of the old fixed constants. **Deliberately not streak-based**:
+  the brief's core loop is "every user in the world gets the same
+  puzzle" for a given date — a size keyed to an individual player's
+  streak would break that the moment two players with different streaks
+  open the app on the same day. A calendar-keyed rhythm keeps the shared
+  ritual intact while still varying week to week. The archive is
+  unaffected code-wise: since it's zero-storage and regenerates every
+  past date from `getDailyPuzzle` on demand, past Saturdays/Sundays
+  correctly regenerate at their own size automatically.
+- **Free Play: a streak-gated size tier, same pattern as `AppColorTheme`.**
+  New `FreePlaySizeUnlocks.extraLargeStreakDays = 14` in
+  `core/constants.dart` (deliberately between the 7-day Sunset theme and
+  30-day Forest theme milestones, so unlocks keep unfolding gradually
+  rather than clustering). `free_play_screen.dart`'s size picker gained a
+  4th, 20x20 "Extra Large" preset, gated on **longest-ever** streak (same
+  reasoning as the theme unlocks: a broken active streak shouldn't
+  re-lock an already-earned size) via `ButtonSegment.enabled` plus a lock
+  icon and the same `themeLockedHint` string the theme picker uses
+  (reused as-is — it was already generic enough, no new ARB key needed).
+- **20x20 had never been exercised before** — Free Play's presets
+  topped out at 15x15, and nothing capped a player from requesting other
+  sizes structurally, but nothing tested that the generator actually
+  handles 20x20 well. Added it to `puzzle_generator_test.dart`'s existing
+  size sweep (now `[5, 10, 15, 20]`) and a new, looser-budget sibling to
+  `benchmark_test.dart`'s 15x15/300ms benchmark (20x20/1000ms — a bigger
+  grid has more to search, and this is a one-off unlock moment, not every
+  day's puzzle) rather than assuming it would "just work" the same way.
+  Both pass comfortably on this dev machine.
+- **New pinned-style regression test**, matching `determinism_test.dart`'s
+  existing spirit: `daily_puzzle_plan_test.dart` pins a few known dates to
+  their expected size, specifically so an accidental future change here
+  can't silently resize a real player's daily puzzle the way the
+  existing pinned fingerprint tests guard against silently *reshaping*
+  one.
 
 ### Post-v1: Interactive tutorial (added 2026-09-02)
 
@@ -926,9 +976,10 @@ not a runtime fallback.
 ### Toolchain on the primary dev machine
 - Flutter 3.35.5 (stable), Dart 3.9.2, Windows 10, no `make` installed.
 - `flutter analyze --fatal-infos --fatal-warnings`: clean.
-- `flutter test`: 104/104 passing (as of the post-v1 tutorial feature).
-  Requires `make test-setup` / `./make.ps1 test-setup` once first (copies
-  Isar's native library into the project root — see Phase 3 deviations).
+- `flutter test`: 111/111 passing (as of the post-v1 progressive-difficulty
+  feature). Requires `make test-setup` / `./make.ps1 test-setup` once
+  first (copies Isar's native library into the project root — see
+  Phase 3 deviations).
 - No Android/iOS device or emulator *reliably reachable*, so the *app*
   itself still can't be run/screenshotted end-to-end — `flutter devices`
   only shows Windows desktop (no `windows/` platform folder — out of

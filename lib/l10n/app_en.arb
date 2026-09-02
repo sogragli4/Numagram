@@ -135,6 +135,10 @@
   "@freePlaySizeLarge": {
     "description": "Large grid size preset label on the free play screen."
   },
+  "freePlaySizeExtraLarge": "Extra Large",
+  "@freePlaySizeExtraLarge": {
+    "description": "Extra large grid size preset label on the free play screen, unlocked by a streak milestone."
+  },
   "playButtonLabel": "Play",
   "@playButtonLabel": {
     "description": "Generic button label to start a puzzle."

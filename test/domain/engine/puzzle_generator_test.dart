@@ -4,7 +4,7 @@ import 'package:nonogram_daily/domain/engine/puzzle_generator.dart';
 
 void main() {
   group('generatePuzzle', () {
-    for (final size in [5, 10, 15]) {
+    for (final size in [5, 10, 15, 20]) {
       test(
         'produces a Solved puzzle for ${size}x$size within the attempt budget',
         () {

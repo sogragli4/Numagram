@@ -34,3 +34,11 @@ abstract final class ThemeUnlocks {
   static const int sunsetStreakDays = 7;
   static const int forestStreakDays = 30;
 }
+
+/// Longest-streak milestone that unlocks the Extra Large Free Play size —
+/// by streak, never by ad, same reasoning as [ThemeUnlocks]. Sits between
+/// the two theme milestones so progression keeps unfolding gradually
+/// rather than clustering everything at 7 or 30 days.
+abstract final class FreePlaySizeUnlocks {
+  static const int extraLargeStreakDays = 14;
+}
